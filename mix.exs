@@ -6,7 +6,9 @@ defmodule EctoOrderable.MixProject do
       app: :ecto_orderable,
       version: "0.1.0",
       elixir: "~> 1.18",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
       deps: deps()
     ]
   end
@@ -18,11 +20,22 @@ defmodule EctoOrderable.MixProject do
     ]
   end
 
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ecto, "~> 3.12"},
+      {:ecto_sql, "~> 3.12", only: :test},
+      {:postgrex, ">= 0.0.0", only: :test}
+    ]
+  end
+
+  def aliases() do
+    [
+      test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end
