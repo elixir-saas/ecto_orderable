@@ -1,8 +1,8 @@
 defmodule EctoOrderableTest do
-  use ExUnit.Case
-  doctest EctoOrderable
+  use EctoOrderable.RepoCase
 
-  test "greets the world" do
-    assert EctoOrderable.hello() == :world
+  test "inserts a set and an item" do
+    assert {:ok, set} = TestRepo.insert(%Set{})
+    assert {:ok, _set} = TestRepo.insert(%Item{set: set})
   end
 end

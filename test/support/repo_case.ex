@@ -4,6 +4,8 @@ defmodule EctoOrderable.RepoCase do
   using do
     quote do
       alias EctoOrderable.TestRepo
+      alias Schemas.Set
+      alias Schemas.Item
 
       import Ecto
       import Ecto.Query

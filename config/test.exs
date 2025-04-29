@@ -9,3 +9,5 @@ config :ecto_orderable, EctoOrderable.TestRepo,
   database: "ecto_orderable_test",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
+
+config :logger, level: :warning
