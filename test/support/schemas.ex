@@ -9,6 +9,7 @@ defmodule Schemas.Item do
   use Ecto.Schema
 
   schema "items" do
-    belongs_to :set, Schemas.Set
+    field(:order_index, :float)
+    belongs_to(:set, Schemas.Set)
   end
 end

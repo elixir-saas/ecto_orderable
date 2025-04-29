@@ -6,6 +6,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateSetsAndItems do
 
     create table(:items) do
       add :set_id, references(:sets), null: false
+      add :order_index, :float, null: false
     end
   end
 end
