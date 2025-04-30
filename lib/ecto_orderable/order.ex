@@ -91,6 +91,10 @@ defmodule EctoOrderable.Order do
       def item(item_struct, opts \\ []) do
         %__MODULE__{context: {:item, item_struct}, opts: opts}
       end
+
+      def move_item(order_struct, opts) do
+        EctoOrderable.move(item(order_struct), opts)
+      end
     end
   end
 end
