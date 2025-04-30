@@ -39,7 +39,8 @@ defmodule EctoOrderable.Order do
   """
 
   @type order() :: %{
-          schema: {:set, struct()} | {:item, struct()},
+          context: {:set, struct() | atom()} | {:item, struct()},
+          opts: Keyword.t(),
           repo: module(),
           order_field: atom(),
           order_increment: float()
@@ -49,19 +50,19 @@ defmodule EctoOrderable.Order do
   Given a struct that represents a container for the set of all items in an OrderableSet,
   must return a query that filters for all the items in the set.
   """
-  @callback set_query(struct()) :: Ecto.Query.t()
+  @callback set_query(struct() | atom(), Keyword.t()) :: Ecto.Query.t()
 
   @doc """
   Given a struct that represents an item in an OrderableSet, must return a query that filters
   for all the items in the set.
   """
-  @callback set_query_for_item(struct()) :: Ecto.Query.t()
+  @callback set_query_for_item(struct(), Keyword.t()) :: Ecto.Query.t()
 
   @doc """
   Given a struct that represents an item in an OrderableSet, must return a query that filters
   for this specific item in the set.
   """
-  @callback item_query(struct()) :: Ecto.Query.t()
+  @callback item_query(struct(), Keyword.t()) :: Ecto.Query.t()
 
   @default_order_field :order_index
   @default_order_increment 1000.0
@@ -76,18 +77,19 @@ defmodule EctoOrderable.Order do
       @behaviour unquote(__MODULE__)
 
       defstruct [
-        :schema,
+        :context,
+        :opts,
         repo: unquote(repo),
         order_field: unquote(order_field),
         order_increment: unquote(order_increment)
       ]
 
-      def set(set_schema) do
-        %__MODULE__{schema: {:set, set_schema}}
+      def set(set_struct, opts \\ []) do
+        %__MODULE__{context: {:set, set_struct}, opts: opts}
       end
 
-      def item(item_schema) do
-        %__MODULE__{schema: {:item, item_schema}}
+      def item(item_struct, opts \\ []) do
+        %__MODULE__{context: {:item, item_struct}, opts: opts}
       end
     end
   end
