@@ -6,8 +6,7 @@ Use with [`@phx-hook/sortable`](https://github.com/elixir-saas/phx-hook/tree/mai
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ecto_orderable` to your list of dependencies in `mix.exs`:
+Install by adding `ecto_orderable` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -16,6 +15,8 @@ def deps do
   ]
 end
 ```
+
+Full documentation at <https://hexdocs.pm/ecto_orderable>.
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
