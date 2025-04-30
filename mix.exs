@@ -40,7 +40,8 @@ defmodule EctoOrderable.MixProject do
     [
       {:ecto, "~> 3.12"},
       {:ecto_sql, "~> 3.12", only: :test},
-      {:postgrex, ">= 0.0.0", only: :test}
+      {:postgrex, ">= 0.0.0", only: :test},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
