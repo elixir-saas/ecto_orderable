@@ -35,7 +35,7 @@ defmodule EctoOrderable.MixProject do
       links: %{
         "GitHub" => @source_url
       },
-      files: ~w(lib guides .formatter.exs mix.exs README.md LICENSE CHANGELOG.md)
+      files: ~w(lib guides .formatter.exs mix.exs README.md)
     ]
   end
 
