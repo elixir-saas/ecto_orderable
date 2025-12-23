@@ -1,17 +1,22 @@
 defmodule EctoOrderable.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/elixir-saas/ecto_orderable"
+  @version "0.1.0"
+
   def project do
     [
       app: :ecto_orderable,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      name: "Ecto Orderable",
+      docs: docs()
     ]
   end
 
@@ -42,6 +47,32 @@ defmodule EctoOrderable.MixProject do
       {:ecto_sql, "~> 3.12", only: :test},
       {:postgrex, ">= 0.0.0", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      source_ref: "v#{@version}",
+      extra_section: "GUIDES",
+      source_url: @source_url,
+      extras: extras(),
+      groups_for_extras: groups_for_extras()
+    ]
+  end
+
+  def extras() do
+    [
+      "guides/introduction/Getting Started.md",
+      "guides/howtos/Belongs-To Sets.md",
+      "guides/howtos/Many-To-Many Sets.md",
+      "guides/howtos/Global Sets.md"
+    ]
+  end
+
+  defp groups_for_extras do
+    [
+      Introduction: ~r/guides\/introduction\/.?/,
+      "How-To's": ~r/guides\/howtos\/.?/
     ]
   end
 
