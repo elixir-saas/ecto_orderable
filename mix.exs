@@ -72,6 +72,7 @@ defmodule EctoOrderable.MixProject do
   def extras() do
     [
       "guides/introduction/Getting Started.md",
+      "guides/introduction/Scope from Joined Tables.md",
       "guides/howtos/Belongs-To Sets.md",
       "guides/howtos/Multi-Scope Sets.md",
       "guides/howtos/Many-To-Many Sets.md",

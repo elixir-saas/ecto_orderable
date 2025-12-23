@@ -174,12 +174,29 @@ def handle_event("move_to_column", %{"card_id" => card_id, "column_id" => new_co
 end
 ```
 
+## Scope from Joined Tables
+
+When a scope field lives on a related table rather than the schema being ordered, use `scope_join` to avoid denormalization:
+
+```elixir
+defmodule UserTaskPositionOrder do
+  use EctoOrderable,
+    repo: MyRepo,
+    schema: UserTaskPosition,
+    scope: [:user_id, :status_id],
+    scope_join: [status_id: {Task, :task_id}]
+end
+```
+
+See the [Scope from Joined Tables](Scope from Joined Tables.md) guide for detailed examples and usage patterns.
+
 ## Comparison with Other Patterns
 
 | Pattern | Scope | Use When |
 |---------|-------|----------|
 | Belongs-To | `[:parent_id]` | Simple parent-child (todos per user) |
 | Multi-Scope | `[:parent_a_id, :parent_b_id]` | Items ordered within intersection of parents |
+| Multi-Scope + Join | `scope_join: [field: {Schema, :fk}]` | Scope field lives on related table |
 | Many-to-Many | `[:user_id]` on join table | Same items, different orderings per user |
 | Global | `[]` | Single shared ordering for all users |
 

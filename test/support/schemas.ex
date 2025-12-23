@@ -1,24 +1,9 @@
+# Base schemas (no dependencies)
+
 defmodule Schemas.Set do
   use Ecto.Schema
 
   schema "sets" do
-  end
-end
-
-defmodule Schemas.Item do
-  use Ecto.Schema
-
-  schema "items" do
-    field(:order_index, :float)
-    belongs_to(:set, Schemas.Set)
-  end
-end
-
-defmodule Schemas.Task do
-  use Ecto.Schema
-
-  schema "tasks" do
-    field(:title, :string)
   end
 end
 
@@ -30,14 +15,11 @@ defmodule Schemas.User do
   end
 end
 
-defmodule Schemas.TaskUser do
+defmodule Schemas.Project do
   use Ecto.Schema
 
-  @primary_key false
-  schema "task_users" do
-    field(:order_index, :float)
-    belongs_to(:task, Schemas.Task, primary_key: true)
-    belongs_to(:user, Schemas.User, primary_key: true)
+  schema "projects" do
+    field(:name, :string)
   end
 end
 
@@ -50,11 +32,47 @@ defmodule Schemas.Template do
   end
 end
 
-defmodule Schemas.Project do
+# Schemas with single dependency
+
+defmodule Schemas.Item do
   use Ecto.Schema
 
-  schema "projects" do
+  schema "items" do
+    field(:order_index, :float)
+    belongs_to(:set, Schemas.Set)
+  end
+end
+
+defmodule Schemas.Status do
+  use Ecto.Schema
+
+  schema "statuses" do
     field(:name, :string)
+    field(:order_index, :float)
+    belongs_to(:project, Schemas.Project)
+  end
+end
+
+# Schemas with multiple dependencies
+
+defmodule Schemas.Task do
+  use Ecto.Schema
+
+  schema "tasks" do
+    field(:title, :string)
+    belongs_to(:status, Schemas.Status)
+    belongs_to(:project, Schemas.Project)
+  end
+end
+
+defmodule Schemas.TaskUser do
+  use Ecto.Schema
+
+  @primary_key false
+  schema "task_users" do
+    field(:order_index, :float)
+    belongs_to(:task, Schemas.Task, primary_key: true)
+    belongs_to(:user, Schemas.User, primary_key: true)
   end
 end
 
@@ -70,5 +88,19 @@ defmodule Schemas.ProjectItem do
     field(:order_index, :float)
     belongs_to(:project, Schemas.Project)
     belongs_to(:user, Schemas.User)
+  end
+end
+
+defmodule Schemas.UserTaskPosition do
+  @moduledoc """
+  A user's ordering of tasks. The status_id for scoping comes from
+  the associated Task, not stored directly on this table.
+  """
+  use Ecto.Schema
+
+  schema "user_task_positions" do
+    field(:order_index, :float)
+    belongs_to(:user, Schemas.User)
+    belongs_to(:task, Schemas.Task)
   end
 end

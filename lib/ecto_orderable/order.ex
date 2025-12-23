@@ -32,6 +32,11 @@ defmodule EctoOrderable.Order do
     * `:schema` - Required. The Ecto schema module being ordered.
     * `:scope` - Required. List of fields that partition items into sets.
       Use `[]` for global ordering.
+    * `:scope_join` - Optional. Keyword list mapping scope fields to joined schemas.
+      Use when a scope field lives on a related table rather than the schema itself.
+      Format: `[field: {JoinedSchema, :foreign_key}]` where `field` is the name of
+      the scope field on `JoinedSchema`, and `:foreign_key` is the field on the
+      current schema that references `JoinedSchema`.
     * `:order_field` - The field storing the order value. Defaults to `:order_index`.
     * `:order_increment` - The default spacing between items. Defaults to `1000.0`.
 
@@ -51,9 +56,35 @@ defmodule EctoOrderable.Order do
         end
       end
 
-  """
+  ## Scope from Joined Tables
 
-  import Ecto.Query
+  When a scope field lives on a related table, use `:scope_join` to avoid
+  denormalizing the field. The library will join to the related table automatically.
+
+      # UserTaskPosition stores each user's ordering of tasks.
+      # We want to scope by user_id (on UserTaskPosition) and status_id (on Task).
+
+      defmodule UserTaskPositionOrder do
+        use EctoOrderable.Order,
+          repo: MyRepo,
+          schema: UserTaskPosition,
+          scope: [:user_id, :status_id],
+          scope_join: [status_id: {Task, :task_id}]
+      end
+
+  The format is `[field: {JoinedSchema, :foreign_key}]`:
+    * `field` - The scope field name, which exists on `JoinedSchema`
+    * `JoinedSchema` - The schema to join to
+    * `:foreign_key` - The field on the current schema that references `JoinedSchema`
+
+  When passing an item struct, the joined association must be preloaded:
+
+      position = Repo.preload(position, :task)
+      UserTaskPositionOrder.move(position, direction: :up)
+
+  See the "Scope from Joined Tables" guide for detailed examples.
+
+  """
 
   @default_order_field :order_index
   @default_order_increment 1000.0
@@ -62,15 +93,15 @@ defmodule EctoOrderable.Order do
     repo = Keyword.get(opts, :repo) || raise "Must specify :repo"
     schema = Keyword.get(opts, :schema) || raise "Must specify :schema"
     scope = Keyword.get(opts, :scope) || raise "Must specify :scope (use [] for global)"
+    scope_join = Keyword.get(opts, :scope_join, [])
     order_field = Keyword.get(opts, :order_field, @default_order_field)
     order_increment = Keyword.get(opts, :order_increment, @default_order_increment)
 
     quote do
-      import Ecto.Query
-
       @repo unquote(repo)
       @schema unquote(schema)
       @scope unquote(scope)
+      @scope_join unquote(scope_join)
       @order_field unquote(order_field)
       @order_increment unquote(order_increment)
 
@@ -79,6 +110,7 @@ defmodule EctoOrderable.Order do
           repo: @repo,
           schema: @schema,
           scope: @scope,
+          scope_join: @scope_join,
           order_field: @order_field,
           order_increment: @order_increment,
           primary_key: @schema.__schema__(:primary_key)
@@ -90,8 +122,7 @@ defmodule EctoOrderable.Order do
       """
       def siblings(item_or_scope) do
         scope_values = resolve_scope(item_or_scope)
-        base_query = from(s in @schema)
-        query = apply_scope(base_query, scope_values)
+        query = EctoOrderable.Scope.apply(@schema, scope_values, @scope_join)
         siblings_query(query, scope_values)
       end
 
@@ -229,6 +260,7 @@ defmodule EctoOrderable.Order do
           repo: @repo,
           schema: @schema,
           scope: @scope,
+          scope_join: @scope_join,
           scope_values: scope_values,
           order_field: @order_field,
           order_increment: @order_increment,
@@ -239,13 +271,7 @@ defmodule EctoOrderable.Order do
       end
 
       defp resolve_scope(item_or_scope) do
-        EctoOrderable.Scope.resolve(item_or_scope, @schema, @scope)
-      end
-
-      defp apply_scope(query, scope_values) do
-        Enum.reduce(scope_values, query, fn {field, value}, q ->
-          where(q, [s], field(s, ^field) == ^value)
-        end)
+        EctoOrderable.Scope.resolve(item_or_scope, @schema, @scope, @scope_join)
       end
     end
   end
