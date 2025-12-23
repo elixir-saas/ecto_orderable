@@ -159,15 +159,15 @@ defmodule Integration.ScopeJoinTest do
     end
   end
 
-  describe "siblings query uses join" do
-    test "returns correct siblings for user and status via join", %{
+  describe "members query uses join" do
+    test "returns correct members for user and status via join", %{
       user1: user1,
       todo_status: status
     } do
-      siblings =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id) |> Repo.all()
+      members =
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id) |> Repo.all()
 
-      assert length(siblings) == 2
+      assert length(members) == 2
     end
 
     test "different users see different counts in same status", %{
@@ -188,7 +188,7 @@ defmodule Integration.ScopeJoinTest do
   describe "move operations" do
     test "move with direction works", %{user1: user1, todo_status: status} do
       positions =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id)
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Repo.preload(:task)
@@ -202,7 +202,7 @@ defmodule Integration.ScopeJoinTest do
     test "move with between using ids", %{user1: user1, todo_status: status} do
       # Get positions in todo status
       positions =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id)
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id)
         |> Repo.all()
         |> Repo.preload(:task)
 
@@ -220,7 +220,7 @@ defmodule Integration.ScopeJoinTest do
       assert count == 2
 
       positions =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id)
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -237,7 +237,7 @@ defmodule Integration.ScopeJoinTest do
     } do
       # Record user2's original order
       user2_original =
-        TestScopeJoinOrder.siblings(user_id: user2.id, status_id: status.id)
+        TestScopeJoinOrder.members(user_id: user2.id, status_id: status.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -247,7 +247,7 @@ defmodule Integration.ScopeJoinTest do
 
       # User2 should be unchanged
       user2_after =
-        TestScopeJoinOrder.siblings(user_id: user2.id, status_id: status.id)
+        TestScopeJoinOrder.members(user_id: user2.id, status_id: status.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -262,7 +262,7 @@ defmodule Integration.ScopeJoinTest do
     } do
       # Record doing's original order
       doing_original =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: doing.id)
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: doing.id)
         |> Repo.all()
         |> Enum.map(& &1.position)
 
@@ -271,7 +271,7 @@ defmodule Integration.ScopeJoinTest do
 
       # Doing should be unchanged
       doing_after =
-        TestScopeJoinOrder.siblings(user_id: user1.id, status_id: doing.id)
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: doing.id)
         |> Repo.all()
         |> Enum.map(& &1.position)
 

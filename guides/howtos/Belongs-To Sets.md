@@ -50,7 +50,7 @@ TodoOrder.move(todo, between: {id_above, id_below})
 # Query helpers
 TodoOrder.first_order(user)
 TodoOrder.last_order(todo)
-TodoOrder.siblings(user) |> Repo.all()
+TodoOrder.members(user) |> Repo.all()
 ```
 
 ## Common Variations
@@ -59,13 +59,13 @@ TodoOrder.siblings(user) |> Repo.all()
 
 **Self-referential**: Comments belonging to a parent comment (nested threads). Use `scope: [:parent_id]` where `parent_id` references the same table. Root comments with `parent_id: nil` form their own set.
 
-**With additional filters**: "Active todos for user X" - override `siblings_query/2` to add extra conditions:
+**With additional filters**: "Active todos for user X" - override `members_query/2` to add extra conditions:
 
 ```elixir
 defmodule ActiveTodoOrder do
   use EctoOrderable, repo: MyRepo, schema: Todo, scope: [:user_id]
 
-  def siblings_query(query, _scope) do
+  def members_query(query, _scope) do
     import Ecto.Query
     where(query, [t], t.status == :active)
   end

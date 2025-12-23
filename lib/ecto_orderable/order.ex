@@ -22,7 +22,7 @@ defmodule EctoOrderable.Order do
       # Query operations
       TodoOrder.first_order(todo)
       TodoOrder.last_order(user)
-      TodoOrder.siblings(todo)
+      TodoOrder.members(todo)
 
   ## Options
 
@@ -38,9 +38,9 @@ defmodule EctoOrderable.Order do
     * `:order_field` - The field storing the order value. Defaults to `:position`.
     * `:order_increment` - The default spacing between items. Defaults to `1000.0`.
 
-  ## Overriding siblings_query
+  ## Overriding members_query
 
-  For complex filtering (soft deletes, status filters), override `siblings_query/2`:
+  For complex filtering (soft deletes, status filters), override `members_query/2`:
 
       defmodule TodoOrder do
         use EctoOrderable.Order,
@@ -48,7 +48,7 @@ defmodule EctoOrderable.Order do
           schema: Todo,
           scope: [:user_id]
 
-        def siblings_query(query, _scope) do
+        def members_query(query, _scope) do
           import Ecto.Query
           where(query, [t], is_nil(t.archived_at))
         end
@@ -116,20 +116,20 @@ defmodule EctoOrderable.Order do
       end
 
       @doc """
-      Returns an Ecto query for all siblings in the same set.
+      Returns an Ecto query for all members of the set.
       """
-      def siblings(item_or_scope) do
+      def members(item_or_scope) do
         scope_values = resolve_scope(item_or_scope)
         query = EctoOrderable.Scope.apply(@schema, scope_values, @scope_join)
-        siblings_query(query, scope_values)
+        members_query(query, scope_values)
       end
 
       @doc """
-      Override this function to add additional filtering to the siblings query.
+      Override this function to add additional filtering to the members query.
       """
-      def siblings_query(query, _scope), do: query
+      def members_query(query, _scope), do: query
 
-      defoverridable siblings_query: 2
+      defoverridable members_query: 2
 
       @doc """
       Returns the order value of the first item in the set.
@@ -264,7 +264,7 @@ defmodule EctoOrderable.Order do
           order_increment: @order_increment,
           primary_key: @schema.__schema__(:primary_key),
           item: item,
-          siblings_query_fn: &siblings/1
+          members_query_fn: &members/1
         }
       end
 

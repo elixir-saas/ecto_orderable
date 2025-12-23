@@ -67,7 +67,7 @@ order = TaskUserOrder.next_order(user)
 Repo.insert!(%TaskUser{task_id: task.id, user_id: user.id, position: order})
 ```
 
-The `between:` option is smart about composite keys. Since the `user_id` is already known from the `task_user` being moved, you only need to specify the `task_id` of the siblings. The library figures out that `task_id` is the "identity" field (primary key minus scope).
+The `between:` option is smart about composite keys. Since the `user_id` is already known from the `task_user` being moved, you only need to specify the `task_id` of the neighboring items. The library figures out that `task_id` is the "identity" field (primary key minus scope).
 
 This can feel indirect. The user thinks "I'm reordering my tasks" but the code operates on join records.
 

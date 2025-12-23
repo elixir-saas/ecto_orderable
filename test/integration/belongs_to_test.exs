@@ -80,9 +80,9 @@ defmodule Integration.BelongsToTest do
     end
   end
 
-  describe "siblings/1" do
+  describe "members/1" do
     test "returns query for all items in set", %{set: set, items: items} do
-      result = TestOrder.siblings(set) |> Repo.all()
+      result = TestOrder.members(set) |> Repo.all()
       assert length(result) == length(items)
     end
 
@@ -93,11 +93,11 @@ defmodule Integration.BelongsToTest do
       Repo.insert!(%Schemas.Item{set: other_set, position: 2000.0})
 
       # Original set should still have same count
-      result = TestOrder.siblings(set) |> Repo.all()
+      result = TestOrder.members(set) |> Repo.all()
       assert length(result) == length(items)
 
       # Other set should have its own items
-      other_result = TestOrder.siblings(other_set) |> Repo.all()
+      other_result = TestOrder.members(other_set) |> Repo.all()
       assert length(other_result) == 2
     end
   end
@@ -261,7 +261,7 @@ defmodule Integration.BelongsToTest do
       {:ok, count} = TestOrder.rebalance(set)
       assert count == 5
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       orders = Enum.map(items, & &1.position)
 
       assert orders == [1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
@@ -274,7 +274,7 @@ defmodule Integration.BelongsToTest do
       TestOrder.move(third, between: {first.id, second.id})
 
       original_order =
-        TestOrder.siblings(set)
+        TestOrder.members(set)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
@@ -282,7 +282,7 @@ defmodule Integration.BelongsToTest do
       {:ok, _} = TestOrder.rebalance(set)
 
       new_order =
-        TestOrder.siblings(set)
+        TestOrder.members(set)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
@@ -293,7 +293,7 @@ defmodule Integration.BelongsToTest do
     test "can order by different field", %{set: set} do
       {:ok, _} = TestOrder.rebalance(set, order_by: :id)
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       assert ids == Enum.sort(ids)
@@ -302,7 +302,7 @@ defmodule Integration.BelongsToTest do
     test "can order descending", %{set: set} do
       {:ok, _} = TestOrder.rebalance(set, order_by: {:desc, :id})
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       assert ids == Enum.sort(ids, :desc)
@@ -339,7 +339,7 @@ defmodule Integration.BelongsToTest do
       TestOrder.rebalance(set)
 
       # Other set should be unchanged
-      other_items = TestOrder.siblings(other_set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      other_items = TestOrder.members(other_set) |> Repo.all() |> Enum.sort_by(& &1.position)
       orders = Enum.map(other_items, & &1.position)
 
       assert orders == [123.0, 456.0]

@@ -97,7 +97,7 @@ This library handles ordering mechanics only. Authorization is your application'
 
 1. **Authorization happens before calling the library.** The library does not check whether the current user is allowed to reorder items. Validate permissions in your application layer before calling `move/2` or other functions.
 
-2. **Ordering is a set-level operation.** Even though you update one item's `position`, the meaning of "position 3" is relative to all siblings. If a user can reorder within a set, they implicitly have access to that set's ordering.
+2. **Ordering is a set-level operation.** Even though you update one item's `position`, the meaning of "position 3" is relative to all other items in the set. If a user can reorder within a set, they implicitly have access to that set's ordering.
 
 3. **The `between:` option trusts the caller.** When you call `move(item, between: {id_above, id_below})`, the library does not verify those IDs belong to the same set. Passing IDs from a different set will produce nonsensical results.
 

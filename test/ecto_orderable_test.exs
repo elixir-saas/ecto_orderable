@@ -63,9 +63,9 @@ defmodule EctoOrderableTest do
     end
   end
 
-  describe "siblings/1" do
+  describe "members/1" do
     test "returns query for all items in set", %{set: set, items: items} do
-      result = TestOrder.siblings(set) |> Repo.all()
+      result = TestOrder.members(set) |> Repo.all()
       assert length(result) == length(items)
     end
   end
@@ -169,7 +169,7 @@ defmodule EctoOrderableTest do
       TestOrder.move(second, between: {first.id, fourth.id})
 
       # Keep moving to make values closer and closer
-      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      reloaded = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       [a, b | _] = reloaded
 
       # Move repeatedly between first two to create tiny gaps
@@ -191,7 +191,7 @@ defmodule EctoOrderableTest do
       {:ok, count} = TestOrder.rebalance(set)
       assert count == 11
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
 
       # Should be evenly spaced at 1000, 2000, 3000, ...
       Enum.each(Enum.with_index(items, 1), fn {item, index} ->
@@ -208,7 +208,7 @@ defmodule EctoOrderableTest do
       # Now rebalance to clean values
       {:ok, _} = TestOrder.rebalance(set)
 
-      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      reloaded = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       orders = Enum.map(reloaded, & &1.position)
 
       # All values should be whole thousands
@@ -219,7 +219,7 @@ defmodule EctoOrderableTest do
       # Rebalance ordering by id
       {:ok, _} = TestOrder.rebalance(set, order_by: :id)
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       # IDs should be in ascending order (since we ordered by :id)
@@ -230,7 +230,7 @@ defmodule EctoOrderableTest do
       # Rebalance ordering by id descending
       {:ok, _} = TestOrder.rebalance(set, order_by: {:desc, :id})
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestOrder.members(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       # IDs should be in descending order

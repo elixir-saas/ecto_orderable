@@ -78,14 +78,14 @@ defmodule Integration.GlobalTest do
     end
   end
 
-  describe "siblings/1" do
+  describe "members/1" do
     test "returns query for all items", %{templates: templates} do
-      result = TestGlobalOrder.siblings([]) |> Repo.all()
+      result = TestGlobalOrder.members([]) |> Repo.all()
       assert length(result) == length(templates)
     end
 
     test "works with item struct", %{templates: [template | _]} do
-      result = TestGlobalOrder.siblings(template) |> Repo.all()
+      result = TestGlobalOrder.members(template) |> Repo.all()
       assert length(result) == 5
     end
   end
@@ -244,7 +244,7 @@ defmodule Integration.GlobalTest do
       assert count == 5
 
       templates =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -259,7 +259,7 @@ defmodule Integration.GlobalTest do
       TestGlobalOrder.move(third, between: {first.id, second.id})
 
       original_order =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
@@ -267,7 +267,7 @@ defmodule Integration.GlobalTest do
       {:ok, _} = TestGlobalOrder.rebalance()
 
       new_order =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
@@ -279,7 +279,7 @@ defmodule Integration.GlobalTest do
       {:ok, _} = TestGlobalOrder.rebalance([], order_by: :id)
 
       templates =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -291,7 +291,7 @@ defmodule Integration.GlobalTest do
       {:ok, _} = TestGlobalOrder.rebalance([], order_by: :name)
 
       templates =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -303,7 +303,7 @@ defmodule Integration.GlobalTest do
       {:ok, _} = TestGlobalOrder.rebalance([], order_by: {:desc, :id})
 
       templates =
-        TestGlobalOrder.siblings([])
+        TestGlobalOrder.members([])
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 

@@ -60,8 +60,8 @@ order = ProjectItemOrder.next_order(project_id: project.id, user_id: user.id)
 # Count items in scope
 ProjectItemOrder.count(project_id: project.id, user_id: user.id)
 
-# Get siblings query
-ProjectItemOrder.siblings(project_id: project.id, user_id: user.id)
+# Get members query
+ProjectItemOrder.members(project_id: project.id, user_id: user.id)
 |> Repo.all()
 
 # Rebalance a specific scope
@@ -77,8 +77,8 @@ When you have an item, scope values are extracted automatically:
 ProjectItemOrder.move(item, direction: :up)
 ProjectItemOrder.move(item, between: {above_id, below_id})
 
-# Get siblings of an item
-ProjectItemOrder.siblings(item) |> Repo.all()
+# Get members of an item's set
+ProjectItemOrder.members(item) |> Repo.all()
 
 # Check position
 ProjectItemOrder.sibling_before(item)

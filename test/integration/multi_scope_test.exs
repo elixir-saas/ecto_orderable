@@ -104,11 +104,11 @@ defmodule Integration.MultiScopeTest do
       assert TestMultiScopeOrder.count(project_id: project2.id, user_id: user1.id) == 2
 
       # Siblings are correctly scoped
-      p1_siblings = TestMultiScopeOrder.siblings(List.first(p1_items)) |> Repo.all()
-      p2_siblings = TestMultiScopeOrder.siblings(List.first(p2_items)) |> Repo.all()
+      p1_members = TestMultiScopeOrder.members(List.first(p1_items)) |> Repo.all()
+      p2_members = TestMultiScopeOrder.members(List.first(p2_items)) |> Repo.all()
 
-      assert length(p1_siblings) == 3
-      assert length(p2_siblings) == 2
+      assert length(p1_members) == 3
+      assert length(p2_members) == 2
     end
 
     test "same project, different users have separate orderings", %{
@@ -138,7 +138,7 @@ defmodule Integration.MultiScopeTest do
 
       # User1/Project2 should be unchanged
       p2_reloaded =
-        TestMultiScopeOrder.siblings(List.first(p2_items))
+        TestMultiScopeOrder.members(List.first(p2_items))
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -147,7 +147,7 @@ defmodule Integration.MultiScopeTest do
 
       # User2/Project1 should be unchanged
       u2_reloaded =
-        TestMultiScopeOrder.siblings(List.first(u2_items))
+        TestMultiScopeOrder.members(List.first(u2_items))
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -171,7 +171,7 @@ defmodule Integration.MultiScopeTest do
 
       # User1/Project2 should be unchanged
       p2_reloaded =
-        TestMultiScopeOrder.siblings(List.first(p2_items))
+        TestMultiScopeOrder.members(List.first(p2_items))
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -180,7 +180,7 @@ defmodule Integration.MultiScopeTest do
 
       # User2/Project1 should be unchanged
       u2_reloaded =
-        TestMultiScopeOrder.siblings(List.first(u2_items))
+        TestMultiScopeOrder.members(List.first(u2_items))
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -259,7 +259,7 @@ defmodule Integration.MultiScopeTest do
       assert count == 3
 
       items =
-        TestMultiScopeOrder.siblings(project_id: project1.id, user_id: user1.id)
+        TestMultiScopeOrder.members(project_id: project1.id, user_id: user1.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -275,7 +275,7 @@ defmodule Integration.MultiScopeTest do
         )
 
       items =
-        TestMultiScopeOrder.siblings(project_id: project1.id, user_id: user2.id)
+        TestMultiScopeOrder.members(project_id: project1.id, user_id: user2.id)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 

@@ -6,14 +6,14 @@ defmodule EctoOrderable.Operations do
 
   def first_order(config) do
     config
-    |> siblings_query()
+    |> members_query()
     |> select([o], coalesce(min(field(o, ^config.order_field)), 0.0))
     |> config.repo.one!()
   end
 
   def last_order(config) do
     config
-    |> siblings_query()
+    |> members_query()
     |> select([o], coalesce(max(field(o, ^config.order_field)), 0.0))
     |> config.repo.one!()
   end
@@ -24,7 +24,7 @@ defmodule EctoOrderable.Operations do
 
   def count(config) do
     config
-    |> siblings_query()
+    |> members_query()
     |> select([o], count())
     |> config.repo.one!()
   end
@@ -33,7 +33,7 @@ defmodule EctoOrderable.Operations do
     threshold = Keyword.get(opts, :threshold, @default_rebalance_threshold)
 
     orders =
-      siblings_query(config)
+      members_query(config)
       |> order_by([o], field(o, ^config.order_field))
       |> select([o], field(o, ^config.order_field))
       |> config.repo.all()
@@ -56,7 +56,7 @@ defmodule EctoOrderable.Operations do
     current_order = current_order(config)
 
     query =
-      from(o in siblings_query(config),
+      from(o in members_query(config),
         where: field(o, ^config.order_field) < ^current_order,
         order_by: {:desc, field(o, ^config.order_field)},
         limit: 1
@@ -69,7 +69,7 @@ defmodule EctoOrderable.Operations do
     current_order = current_order(config)
 
     query =
-      from(o in siblings_query(config),
+      from(o in members_query(config),
         where: field(o, ^config.order_field) > ^current_order,
         order_by: {:asc, field(o, ^config.order_field)},
         limit: 1
@@ -108,7 +108,7 @@ defmodule EctoOrderable.Operations do
 
     # Fetch all primary keys in desired order
     items =
-      siblings_query(config)
+      members_query(config)
       |> apply_order_by(order_by_opt)
       |> select([o], map(o, ^config.primary_key))
       |> config.repo.all()
@@ -132,7 +132,7 @@ defmodule EctoOrderable.Operations do
       |> Enum.each(fn {pk_map, index} ->
         new_order = index * config.order_increment
 
-        siblings_query(config)
+        members_query(config)
         |> where_primary_key(config.primary_key, pk_map)
         |> config.repo.update_all(set: [{config.order_field, new_order}])
       end)
@@ -163,7 +163,7 @@ defmodule EctoOrderable.Operations do
     current_order = current_order(config)
 
     query =
-      from(o in siblings_query(config),
+      from(o in members_query(config),
         where: field(o, ^config.order_field) < ^current_order,
         order_by: {:desc, field(o, ^config.order_field)},
         select: field(o, ^config.order_field),
@@ -181,7 +181,7 @@ defmodule EctoOrderable.Operations do
     current_order = current_order(config)
 
     query =
-      from(o in siblings_query(config),
+      from(o in members_query(config),
         where: field(o, ^config.order_field) > ^current_order,
         order_by: {:asc, field(o, ^config.order_field)},
         select: field(o, ^config.order_field),
@@ -206,7 +206,7 @@ defmodule EctoOrderable.Operations do
     # Resolve item_id to a full primary key map if needed
     resolved_id = resolve_item_id(config, item_id)
 
-    siblings_query(config)
+    members_query(config)
     |> where_primary_key(config.primary_key, resolved_id)
     |> select([o], field(o, ^config.order_field))
     |> config.repo.one!()
@@ -248,8 +248,8 @@ defmodule EctoOrderable.Operations do
     end)
   end
 
-  defp siblings_query(config) do
-    config.siblings_query_fn.(config.item || config.scope_values)
+  defp members_query(config) do
+    config.members_query_fn.(config.item || config.scope_values)
   end
 
   defp item_query(config) do
@@ -261,7 +261,7 @@ defmodule EctoOrderable.Operations do
       config.primary_key
       |> Enum.map(fn pk_field -> {pk_field, Map.fetch!(config.item, pk_field)} end)
 
-    Enum.reduce(pk_values, siblings_query(config), fn {pk_field, value}, q ->
+    Enum.reduce(pk_values, members_query(config), fn {pk_field, value}, q ->
       where(q, [o], field(o, ^pk_field) == ^value)
     end)
   end

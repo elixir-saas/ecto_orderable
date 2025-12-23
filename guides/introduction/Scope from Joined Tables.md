@@ -69,8 +69,8 @@ order = UserTaskPositionOrder.next_order(user_id: user.id, status_id: status.id)
 # Count positions in a scope
 UserTaskPositionOrder.count(user_id: user.id, status_id: status.id)
 
-# Get all siblings
-UserTaskPositionOrder.siblings(user_id: user.id, status_id: status.id)
+# Get all members
+UserTaskPositionOrder.members(user_id: user.id, status_id: status.id)
 |> Repo.all()
 
 # Rebalance a scope

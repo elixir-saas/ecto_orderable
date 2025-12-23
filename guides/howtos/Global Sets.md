@@ -50,12 +50,12 @@ TemplateOrder.move(template, between: {id_above, id_below})
 # Query helpers - no scope argument needed
 TemplateOrder.first_order()
 TemplateOrder.last_order()
-TemplateOrder.siblings(template) |> Repo.all()
+TemplateOrder.members(template) |> Repo.all()
 ```
 
 ## Filtered Global Sets
 
-If you need to order only a subset of records (e.g., only active templates), override `siblings_query/2`:
+If you need to order only a subset of records (e.g., only active templates), override `members_query/2`:
 
 ```elixir
 defmodule ActiveTemplateOrder do
@@ -64,7 +64,7 @@ defmodule ActiveTemplateOrder do
     schema: OnboardingTaskTemplate,
     scope: []
 
-  def siblings_query(query, _scope) do
+  def members_query(query, _scope) do
     import Ecto.Query
     where(query, [t], t.active == true)
   end
@@ -75,6 +75,6 @@ end
 
 **Multi-tenant global**: Global within a tenant, but each tenant has their own ordering. This is really just belongs-to where the parent is a Tenant/Organization - use `scope: [:tenant_id]`.
 
-**Filtered global**: "All active templates" vs "all archived templates" - use separate Order modules with different `siblings_query/2` overrides, as shown above.
+**Filtered global**: "All active templates" vs "all archived templates" - use separate Order modules with different `members_query/2` overrides, as shown above.
 
 **Multiple global orderings**: Same records ordered differently for different purposes. Use multiple `position` fields (e.g., `priority_order`, `display_order`) with separate Order modules specifying different `order_field:` options.

@@ -158,8 +158,8 @@ defmodule Integration.ManyToManyTest do
       assert sibling.user_id == second.user_id
     end
 
-    test "siblings returns all task_users for user", %{user: user, task_users: task_users} do
-      result = TestTaskUserOrder.siblings(user) |> Repo.all()
+    test "members returns all task_users for user", %{user: user, task_users: task_users} do
+      result = TestTaskUserOrder.members(user) |> Repo.all()
       assert length(result) == length(task_users)
     end
 
@@ -179,7 +179,7 @@ defmodule Integration.ManyToManyTest do
       assert count == 5
 
       # Verify all values are evenly spaced
-      items = TestTaskUserOrder.siblings(user) |> Repo.all() |> Enum.sort_by(& &1.position)
+      items = TestTaskUserOrder.members(user) |> Repo.all() |> Enum.sort_by(& &1.position)
       orders = Enum.map(items, & &1.position)
       assert orders == [1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
     end
@@ -205,7 +205,7 @@ defmodule Integration.ManyToManyTest do
 
       # Verify User A's order
       user_a_tasks =
-        TestTaskUserOrder.siblings(user_a)
+        TestTaskUserOrder.members(user_a)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.task_id)
@@ -214,7 +214,7 @@ defmodule Integration.ManyToManyTest do
 
       # Verify User B's order
       user_b_tasks =
-        TestTaskUserOrder.siblings(user_b)
+        TestTaskUserOrder.members(user_b)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.task_id)
@@ -243,7 +243,7 @@ defmodule Integration.ManyToManyTest do
 
       # Other user's ordering should be unchanged
       reloaded =
-        TestTaskUserOrder.siblings(other_user)
+        TestTaskUserOrder.members(other_user)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 
@@ -276,7 +276,7 @@ defmodule Integration.ManyToManyTest do
 
       # Other user's ordering should be unchanged
       other_orders =
-        TestTaskUserOrder.siblings(other_user)
+        TestTaskUserOrder.members(other_user)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.position)
@@ -307,7 +307,7 @@ defmodule Integration.ManyToManyTest do
       [task1, task2, _task3 | _] = tasks
 
       [first, second, third | _] =
-        TestTaskUserOrder.siblings(user)
+        TestTaskUserOrder.members(user)
         |> Repo.all()
         |> Enum.sort_by(& &1.position)
 

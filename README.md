@@ -149,7 +149,7 @@ TemplateOrder.move(template, direction: :up)
 | `first_order(scope)` | Get order value of first item |
 | `last_order(scope)` | Get order value of last item |
 | `count(scope)` | Count items in the set |
-| `siblings(scope)` | Get Ecto query for all items in set |
+| `members(scope)` | Get Ecto query for all items in set |
 | `move(item, opts)` | Move an item (`direction:` or `between:`) |
 | `sibling_before(item)` | Get item immediately before |
 | `sibling_after(item)` | Get item immediately after |
@@ -168,7 +168,7 @@ TodoOrder.next_order(user)
 TodoOrder.next_order(user_id: 123)
 
 # Item struct - extracts scope fields from item
-TodoOrder.siblings(todo)
+TodoOrder.members(todo)
 
 # No argument - for global sets with scope: []
 TemplateOrder.next_order()
@@ -241,7 +241,7 @@ end
 
 ### Custom Filtering
 
-Override `siblings_query/2` for additional filtering:
+Override `members_query/2` for additional filtering:
 
 ```elixir
 defmodule ActiveTodoOrder do
@@ -250,7 +250,7 @@ defmodule ActiveTodoOrder do
     schema: Todo,
     scope: [:user_id]
 
-  def siblings_query(query, _scope) do
+  def members_query(query, _scope) do
     import Ecto.Query
     where(query, [t], t.status == :active)
   end
