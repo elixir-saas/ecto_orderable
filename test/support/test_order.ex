@@ -1,20 +1,31 @@
 defmodule TestOrder do
-  use EctoOrderable.Order, repo: EctoOrderable.TestRepo
+  use EctoOrderable,
+    repo: EctoOrderable.TestRepo,
+    schema: Schemas.Item,
+    scope: [:set_id]
+end
 
-  import Ecto.Query
+defmodule TestTaskUserOrder do
+  use EctoOrderable,
+    repo: EctoOrderable.TestRepo,
+    schema: Schemas.TaskUser,
+    scope: [:user_id]
+end
 
-  @impl true
-  def set_query(set, _opts) do
-    where(Schemas.Item, set_id: ^set.id)
-  end
+defmodule TestGlobalOrder do
+  use EctoOrderable,
+    repo: EctoOrderable.TestRepo,
+    schema: Schemas.Template,
+    scope: []
+end
 
-  @impl true
-  def set_query_for_item(item, _opts) do
-    where(Schemas.Item, set_id: ^item.set_id)
-  end
-
-  @impl true
-  def item_query(item, _opts) do
-    where(Schemas.Item, set_id: ^item.set_id, id: ^item.id)
-  end
+defmodule TestMultiScopeOrder do
+  @moduledoc """
+  Order module with multiple scope fields.
+  Items are ordered per project per user.
+  """
+  use EctoOrderable,
+    repo: EctoOrderable.TestRepo,
+    schema: Schemas.ProjectItem,
+    scope: [:project_id, :user_id]
 end

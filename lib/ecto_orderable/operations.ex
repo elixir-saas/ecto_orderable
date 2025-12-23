@@ -2,155 +2,275 @@ defmodule EctoOrderable.Operations do
   @moduledoc false
   import Ecto.Query
 
-  def first_order(order_struct) do
-    order_struct
-    |> set_query()
-    |> select([o], coalesce(min(field(o, ^order_struct.order_field)), 0.0))
-    |> order_struct.repo.one!()
+  @default_rebalance_threshold 0.001
+
+  def first_order(config) do
+    config
+    |> siblings_query()
+    |> select([o], coalesce(min(field(o, ^config.order_field)), 0.0))
+    |> config.repo.one!()
   end
 
-  def last_order(order_struct) do
-    order_struct
-    |> set_query()
-    |> select([o], coalesce(max(field(o, ^order_struct.order_field)), 0.0))
-    |> order_struct.repo.one!()
+  def last_order(config) do
+    config
+    |> siblings_query()
+    |> select([o], coalesce(max(field(o, ^config.order_field)), 0.0))
+    |> config.repo.one!()
   end
 
-  def next_order(order_struct) do
-    last_order(order_struct) + order_struct.order_increment
+  def next_order(config) do
+    last_order(config) + config.order_increment
   end
 
-  def sibling_before(order_struct) do
-    current_order = current_order(order_struct)
+  def count(config) do
+    config
+    |> siblings_query()
+    |> select([o], count())
+    |> config.repo.one!()
+  end
+
+  def needs_rebalance?(config, opts) do
+    threshold = Keyword.get(opts, :threshold, @default_rebalance_threshold)
+
+    orders =
+      siblings_query(config)
+      |> order_by([o], field(o, ^config.order_field))
+      |> select([o], field(o, ^config.order_field))
+      |> config.repo.all()
+
+    case orders do
+      [] ->
+        false
+
+      [_] ->
+        false
+
+      _ ->
+        orders
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.any?(fn [a, b] -> b - a < threshold end)
+    end
+  end
+
+  def sibling_before(config) do
+    current_order = current_order(config)
 
     query =
-      from(o in set_query(order_struct),
-        where: field(o, ^order_struct.order_field) < ^current_order,
-        order_by: {:desc, field(o, ^order_struct.order_field)},
+      from(o in siblings_query(config),
+        where: field(o, ^config.order_field) < ^current_order,
+        order_by: {:desc, field(o, ^config.order_field)},
         limit: 1
       )
 
-    order_struct.repo.one(query)
+    config.repo.one(query)
   end
 
-  def sibling_after(order_struct) do
-    current_order = current_order(order_struct)
+  def sibling_after(config) do
+    current_order = current_order(config)
 
     query =
-      from(o in set_query(order_struct),
-        where: field(o, ^order_struct.order_field) > ^current_order,
-        order_by: {:asc, field(o, ^order_struct.order_field)},
+      from(o in siblings_query(config),
+        where: field(o, ^config.order_field) > ^current_order,
+        order_by: {:asc, field(o, ^config.order_field)},
         limit: 1
       )
 
-    order_struct.repo.one(query)
+    config.repo.one(query)
   end
 
-  def move(order_struct, opts) do
+  def move(config, opts) do
+    unless config.item do
+      raise ArgumentError, "move/2 requires an item struct"
+    end
+
     next_order =
       cond do
         between_opt = opts[:between] ->
-          next_order_between(order_struct, between_opt)
+          next_order_between(config, between_opt)
 
         direction_opt = opts[:direction] ->
-          next_order_direction(order_struct, direction_opt)
+          next_order_direction(config, direction_opt)
 
         true ->
-          raise "Must provide one of :between, :direction to move/2"
+          raise ArgumentError, "Must provide one of :between, :direction to move/2"
       end
 
     if next_order do
-      item_query = item_query(order_struct)
-      order_struct.repo.update_all(item_query, set: [{order_struct.order_field, next_order}])
+      item_query = item_query(config)
+      config.repo.update_all(item_query, set: [{config.order_field, next_order}])
     end
 
-    extract(order_struct, next_order)
+    extract(config, next_order)
+  end
+
+  def rebalance(config, opts) do
+    order_by_opt = Keyword.get(opts, :order_by, config.order_field)
+
+    # Fetch all primary keys in desired order
+    items =
+      siblings_query(config)
+      |> apply_order_by(order_by_opt)
+      |> select([o], map(o, ^config.primary_key))
+      |> config.repo.all()
+
+    case items do
+      [] ->
+        {:ok, 0}
+
+      items ->
+        do_rebalance(config, items)
+        {:ok, length(items)}
+    end
   end
 
   ## Internal
 
-  defp next_order_between(order_struct, {before_id, after_id}) do
-    before_order = select_order(order_struct, before_id)
-    after_order = select_order(order_struct, after_id)
+  defp do_rebalance(config, items) do
+    config.repo.transaction(fn ->
+      items
+      |> Enum.with_index(1)
+      |> Enum.each(fn {pk_map, index} ->
+        new_order = index * config.order_increment
+
+        siblings_query(config)
+        |> where_primary_key(config.primary_key, pk_map)
+        |> config.repo.update_all(set: [{config.order_field, new_order}])
+      end)
+    end)
+  end
+
+  defp apply_order_by(query, {direction, field}) when direction in [:asc, :desc] do
+    order_by(query, [o], [{^direction, field(o, ^field)}])
+  end
+
+  defp apply_order_by(query, field) when is_atom(field) do
+    order_by(query, [o], field(o, ^field))
+  end
+
+  defp next_order_between(config, {before_id, after_id}) do
+    before_order = select_order(config, before_id)
+    after_order = select_order(config, after_id)
 
     case {before_order, after_order} do
       {nil, nil} -> nil
-      {nil, after_order} -> after_order - order_struct.order_increment
-      {before_order, nil} -> before_order + order_struct.order_increment
+      {nil, after_order} -> after_order - config.order_increment
+      {before_order, nil} -> before_order + config.order_increment
       {before_order, after_order} -> (before_order + after_order) / 2
     end
   end
 
-  defp next_order_direction(order_struct, :up) do
-    current_order = current_order(order_struct)
+  defp next_order_direction(config, :up) do
+    current_order = current_order(config)
 
     query =
-      from(o in set_query(order_struct),
-        where: field(o, ^order_struct.order_field) < ^current_order,
-        order_by: {:desc, field(o, ^order_struct.order_field)},
-        select: field(o, ^order_struct.order_field),
+      from(o in siblings_query(config),
+        where: field(o, ^config.order_field) < ^current_order,
+        order_by: {:desc, field(o, ^config.order_field)},
+        select: field(o, ^config.order_field),
         limit: 2
       )
 
-    case order_struct.repo.all(query) do
+    case config.repo.all(query) do
       [] -> nil
-      [prev_order] -> prev_order - order_struct.order_increment
+      [prev_order] -> prev_order - config.order_increment
       [prev_order, prev_prev_order] -> (prev_order + prev_prev_order) / 2
     end
   end
 
-  defp next_order_direction(order_struct, :down) do
-    current_order = current_order(order_struct)
+  defp next_order_direction(config, :down) do
+    current_order = current_order(config)
 
     query =
-      from(o in set_query(order_struct),
-        where: field(o, ^order_struct.order_field) > ^current_order,
-        order_by: {:asc, field(o, ^order_struct.order_field)},
-        select: field(o, ^order_struct.order_field),
+      from(o in siblings_query(config),
+        where: field(o, ^config.order_field) > ^current_order,
+        order_by: {:asc, field(o, ^config.order_field)},
+        select: field(o, ^config.order_field),
         limit: 2
       )
 
-    case order_struct.repo.all(query) do
+    case config.repo.all(query) do
       [] -> nil
-      [next_order] -> next_order + order_struct.order_increment
+      [next_order] -> next_order + config.order_increment
       [next_order, next_next_order] -> (next_order + next_next_order) / 2
     end
   end
 
-  def current_order(order_struct) do
-    item_query = item_query(order_struct)
-    order_struct.repo.one!(select(item_query, [o], field(o, ^order_struct.order_field)))
+  defp current_order(config) do
+    item_query = item_query(config)
+    config.repo.one!(select(item_query, [o], field(o, ^config.order_field)))
   end
 
-  defp select_order(_order_struct, _item_id = nil), do: nil
+  defp select_order(_config, nil), do: nil
 
-  defp select_order(order_struct, item_id) do
-    set_query = set_query(order_struct)
-    query = select(set_query, [o], field(o, ^order_struct.order_field))
-    order_struct.repo.get!(query, item_id)
+  defp select_order(config, item_id) do
+    # Resolve item_id to a full primary key map if needed
+    resolved_id = resolve_item_id(config, item_id)
+
+    siblings_query(config)
+    |> where_primary_key(config.primary_key, resolved_id)
+    |> select([o], field(o, ^config.order_field))
+    |> config.repo.one!()
   end
 
-  defp set_query(%module{context: {:set, set_struct}, opts: opts}) do
-    module.set_query(set_struct, opts)
+  # For composite keys with a simple value, inherit scope from the item being moved
+  defp resolve_item_id(config, item_id) when not is_map(item_id) do
+    identity_fields = config.primary_key -- config.scope
+
+    case identity_fields do
+      # Single identity field - use the passed value directly
+      [identity_field] when length(config.primary_key) > 1 ->
+        # Build full primary key by combining identity value with scope from item
+        scope_values =
+          config.scope
+          |> Enum.map(fn field -> {field, Map.fetch!(config.item, field)} end)
+          |> Map.new()
+
+        Map.put(scope_values, identity_field, item_id)
+
+      # Simple primary key or multiple identity fields - use as-is
+      _ ->
+        item_id
+    end
   end
 
-  defp set_query(%module{context: {:item, item_struct}, opts: opts}) do
-    module.set_query_for_item(item_struct, opts)
+  defp resolve_item_id(_config, item_id) when is_map(item_id) do
+    item_id
   end
 
-  defp item_query(%_module{context: {:set, _set_struct}}) do
-    raise "Cannot generate item_query when only the set struct is provided"
+  defp where_primary_key(query, [pk_field], id) when not is_map(id) do
+    where(query, [o], field(o, ^pk_field) == ^id)
   end
 
-  defp item_query(%module{context: {:item, item_struct}, opts: opts}) do
-    module.item_query(item_struct, opts)
+  defp where_primary_key(query, pk_fields, id) when is_map(id) do
+    Enum.reduce(pk_fields, query, fn pk_field, q ->
+      value = Map.fetch!(id, pk_field)
+      where(q, [o], field(o, ^pk_field) == ^value)
+    end)
   end
 
-  defp extract(%_module{context: {:item, item_struct}}, _order_index = nil) do
-    item_struct
+  defp siblings_query(config) do
+    config.siblings_query_fn.(config.item || config.scope_values)
   end
 
-  defp extract(%_module{context: {:item, item_struct}} = order_struct, order_index) do
-    Map.put(item_struct, order_struct.order_field, order_index)
+  defp item_query(config) do
+    unless config.item do
+      raise ArgumentError, "Cannot generate item_query without an item"
+    end
+
+    pk_values =
+      config.primary_key
+      |> Enum.map(fn pk_field -> {pk_field, Map.fetch!(config.item, pk_field)} end)
+
+    Enum.reduce(pk_values, siblings_query(config), fn {pk_field, value}, q ->
+      where(q, [o], field(o, ^pk_field) == ^value)
+    end)
+  end
+
+  defp extract(config, nil) do
+    config.item
+  end
+
+  defp extract(config, order_index) do
+    Map.put(config.item, config.order_field, order_index)
   end
 end

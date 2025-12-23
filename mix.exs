@@ -21,13 +21,21 @@ defmodule EctoOrderable.MixProject do
   end
 
   defp description() do
-    "Add orderable sets with Ecto to your database."
+    """
+    Flexible ordering for Ecto schemas. Supports belongs-to, many-to-many, and global
+    sets with fractional indexing for efficient reordering. Integrates with Phoenix
+    LiveView and Sortable.js for drag-and-drop interfaces.
+    """
   end
 
   defp package() do
     [
+      maintainers: ["Justin Tormey"],
       licenses: ["Apache-2.0"],
-      links: %{}
+      links: %{
+        "GitHub" => @source_url
+      },
+      files: ~w(lib guides .formatter.exs mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
@@ -52,6 +60,7 @@ defmodule EctoOrderable.MixProject do
 
   defp docs do
     [
+      main: "getting-started",
       source_ref: "v#{@version}",
       extra_section: "GUIDES",
       source_url: @source_url,
@@ -64,8 +73,10 @@ defmodule EctoOrderable.MixProject do
     [
       "guides/introduction/Getting Started.md",
       "guides/howtos/Belongs-To Sets.md",
+      "guides/howtos/Multi-Scope Sets.md",
       "guides/howtos/Many-To-Many Sets.md",
-      "guides/howtos/Global Sets.md"
+      "guides/howtos/Global Sets.md",
+      "guides/howtos/Phoenix LiveView Integration.md"
     ]
   end
 

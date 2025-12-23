@@ -1,41 +1,99 @@
 defmodule EctoOrderable.Query do
   @moduledoc """
   Helpers for querying position information for items in an ordered set.
+
+  ## Checking Position in Queries
+
+  To check if an item is first or last in its set, compute the boundary value
+  and compare directly:
+
+      first_order = TodoOrder.first_order(user)
+      last_order = TodoOrder.last_order(user)
+
+      from(t in Todo,
+        where: t.user_id == ^user.id,
+        select: %{
+          todo: t,
+          is_first: t.order_index == ^first_order,
+          is_last: t.order_index == ^last_order
+        }
+      )
+
+  ## Using the Macros
+
+  For convenience, you can use the `first_in_order?/3` and `last_in_order?/3` macros
+  which handle the comparison as a SQL fragment:
+
+      import EctoOrderable.Query
+
+      from(t in Todo,
+        where: t.user_id == ^user.id,
+        select: %{
+          todo: t,
+          is_first: first_in_order?(TodoOrder, ^user, t),
+          is_last: last_in_order?(TodoOrder, ^user, t)
+        }
+      )
+
   """
 
   @doc """
-  Given an interpolated Orderable and an Ecto query term representing an orderable row,
-  returns a boolean indicating if the row is first in the sequence.
+  Returns a SQL fragment that evaluates to true if the row is first in the ordered set.
+
+  ## Parameters
+
+    * `order_module` - The order module (e.g., `TodoOrder`)
+    * `scope` - The scope, must be interpolated with `^` (e.g., `^user` or `^[user_id: 1]`)
+    * `row` - The query binding for the row being checked
+
+  ## Example
+
+      from(t in Todo,
+        select: %{todo: t, is_first: first_in_order?(TodoOrder, ^user, t)}
+      )
+
   """
-  defmacro first_in_order?({:^, _, [order]}, row) do
+  defmacro first_in_order?(order_module, {:^, _, [scope]}, row) do
     quote do
       fragment(
         "CASE WHEN ? = ? THEN true ELSE false END",
-        field(unquote(row), ^unquote(order).order_field),
-        ^EctoOrderable.first_order(unquote(order))
+        field(unquote(row), ^unquote(order_module).__config__().order_field),
+        ^unquote(order_module).first_order(unquote(scope))
       )
     end
   end
 
-  defmacro first_in_order?(order, _row) do
-    raise "Unbound variable `#{Macro.to_string(order)}` in query. If you are attempting to interpolate a value, use ^var"
+  defmacro first_in_order?(_order_module, scope, _row) do
+    raise "Unbound variable `#{Macro.to_string(scope)}` in query. Use ^var to interpolate the scope."
   end
 
   @doc """
-  Given an interpolated Orderable and an Ecto query term representing an orderable row,
-  returns a boolean indicating if the row is last in the sequence.
+  Returns a SQL fragment that evaluates to true if the row is last in the ordered set.
+
+  ## Parameters
+
+    * `order_module` - The order module (e.g., `TodoOrder`)
+    * `scope` - The scope, must be interpolated with `^` (e.g., `^user` or `^[user_id: 1]`)
+    * `row` - The query binding for the row being checked
+
+  ## Example
+
+      from(t in Todo,
+        select: %{todo: t, is_last: last_in_order?(TodoOrder, ^user, t)}
+      )
+
   """
-  defmacro last_in_order?({:^, _, [order]}, row) do
+  defmacro last_in_order?(order_module, {:^, _, [scope]}, row) do
     quote do
       fragment(
         "CASE WHEN ? = ? THEN true ELSE false END",
-        field(unquote(row), ^unquote(order).order_field),
-        ^EctoOrderable.last_order(unquote(order))
+        field(unquote(row), ^unquote(order_module).__config__().order_field),
+        ^unquote(order_module).last_order(unquote(scope))
       )
     end
   end
 
-  defmacro last_in_order?(order, _row) do
-    raise "Unbound variable `#{Macro.to_string(order)}` in query. If you are attempting to interpolate a value, use ^var"
+  defmacro last_in_order?(_order_module, scope, _row) do
+    raise "Unbound variable `#{Macro.to_string(scope)}` in query. Use ^var to interpolate the scope."
   end
 end

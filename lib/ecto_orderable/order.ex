@@ -1,99 +1,251 @@
 defmodule EctoOrderable.Order do
   @moduledoc """
+  Defines an ordering module for a schema.
 
-      defmodule TaskOrder do
+  ## Example
+
+      defmodule TodoOrder do
         use EctoOrderable.Order,
           repo: MyApp.Repo,
+          schema: Todo,
+          scope: [:user_id],
           order_field: :order_index,
           order_increment: 1000.0
+      end
 
-        def set_query(organization, opts) do
-          ...
-        end
+      # Get next order value for a new todo
+      TodoOrder.next_order(user)
+      TodoOrder.next_order(user_id: 123)
 
-        def set_query_for_item(task, opts) do
-          ...
-        end
+      # Reorder existing todo
+      TodoOrder.move(todo, direction: :up)
+      TodoOrder.move(todo, between: {id_above, id_below})
 
-        def item_query(task, opts) do
-          ...
+      # Query operations
+      TodoOrder.first_order(todo)
+      TodoOrder.last_order(user)
+      TodoOrder.siblings(todo)
+
+  ## Options
+
+    * `:repo` - Required. The Ecto repo module.
+    * `:schema` - Required. The Ecto schema module being ordered.
+    * `:scope` - Required. List of fields that partition items into sets.
+      Use `[]` for global ordering.
+    * `:order_field` - The field storing the order value. Defaults to `:order_index`.
+    * `:order_increment` - The default spacing between items. Defaults to `1000.0`.
+
+  ## Overriding siblings_query
+
+  For complex filtering (soft deletes, status filters), override `siblings_query/2`:
+
+      defmodule TodoOrder do
+        use EctoOrderable.Order,
+          repo: MyRepo,
+          schema: Todo,
+          scope: [:user_id]
+
+        def siblings_query(query, _scope) do
+          import Ecto.Query
+          where(query, [t], is_nil(t.archived_at))
         end
       end
 
-      TaskOrder.set(organization) |> EctoOrderable.first_order()
-
-      TaskOrder.set(organization) |> EctoOrderable.last_order()
-
-      TaskOrder.set(organization) |> EctoOrderable.next_order()
-
-      TaskOrder.item(task) |> EctoOrderable.move(:up)
-
-      TaskOrder.item(task) |> EctoOrderable.current_order()
-
-      TaskOrder.item(task) |> EctoOrderable.insert(:up)
-
-      TaskOrder.item(task) |> EctoOrderable.reposition(1000.0)
-
-      TaskOrder.item(task) |> EctoOrderable.reposition(1000.0)
-
   """
 
-  @type order() :: %{
-          context: {:set, struct() | atom()} | {:item, struct()},
-          opts: Keyword.t(),
-          repo: module(),
-          order_field: atom(),
-          order_increment: float()
-        }
-
-  @doc """
-  Given a struct that represents a container for the set of all items in an OrderableSet,
-  must return a query that filters for all the items in the set.
-  """
-  @callback set_query(struct() | atom(), Keyword.t()) :: Ecto.Query.t()
-
-  @doc """
-  Given a struct that represents an item in an OrderableSet, must return a query that filters
-  for all the items in the set.
-  """
-  @callback set_query_for_item(struct(), Keyword.t()) :: Ecto.Query.t()
-
-  @doc """
-  Given a struct that represents an item in an OrderableSet, must return a query that filters
-  for this specific item in the set.
-  """
-  @callback item_query(struct(), Keyword.t()) :: Ecto.Query.t()
+  import Ecto.Query
 
   @default_order_field :order_index
   @default_order_increment 1000.0
 
   defmacro __using__(opts) do
-    repo = Keyword.get(opts, :repo) || raise "Must specify :repo when using OrderableSet"
-
+    repo = Keyword.get(opts, :repo) || raise "Must specify :repo"
+    schema = Keyword.get(opts, :schema) || raise "Must specify :schema"
+    scope = Keyword.get(opts, :scope) || raise "Must specify :scope (use [] for global)"
     order_field = Keyword.get(opts, :order_field, @default_order_field)
     order_increment = Keyword.get(opts, :order_increment, @default_order_increment)
 
     quote do
-      @behaviour unquote(__MODULE__)
+      import Ecto.Query
 
-      defstruct [
-        :context,
-        :opts,
-        repo: unquote(repo),
-        order_field: unquote(order_field),
-        order_increment: unquote(order_increment)
-      ]
+      @repo unquote(repo)
+      @schema unquote(schema)
+      @scope unquote(scope)
+      @order_field unquote(order_field)
+      @order_increment unquote(order_increment)
 
-      def set(set_struct, opts \\ []) do
-        %__MODULE__{context: {:set, set_struct}, opts: opts}
+      def __config__ do
+        %{
+          repo: @repo,
+          schema: @schema,
+          scope: @scope,
+          order_field: @order_field,
+          order_increment: @order_increment,
+          primary_key: @schema.__schema__(:primary_key)
+        }
       end
 
-      def item(item_struct, opts \\ []) do
-        %__MODULE__{context: {:item, item_struct}, opts: opts}
+      @doc """
+      Returns an Ecto query for all siblings in the same set.
+      """
+      def siblings(item_or_scope) do
+        scope_values = resolve_scope(item_or_scope)
+        base_query = from(s in @schema)
+        query = apply_scope(base_query, scope_values)
+        siblings_query(query, scope_values)
       end
 
-      def move_item(order_struct, opts) do
-        EctoOrderable.move(item(order_struct), opts)
+      @doc """
+      Override this function to add additional filtering to the siblings query.
+      """
+      def siblings_query(query, _scope), do: query
+
+      defoverridable siblings_query: 2
+
+      @doc """
+      Returns the order value of the first item in the set.
+      """
+      def first_order(item_or_scope \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.first_order(config)
+      end
+
+      @doc """
+      Returns the order value of the last item in the set.
+      """
+      def last_order(item_or_scope \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.last_order(config)
+      end
+
+      @doc """
+      Returns the next order value for appending a new item to the set.
+      """
+      def next_order(item_or_scope \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.next_order(config)
+      end
+
+      @doc """
+      Returns the sibling immediately before the given item, or nil.
+      """
+      def sibling_before(item) do
+        config = build_config(item)
+        EctoOrderable.Operations.sibling_before(config)
+      end
+
+      @doc """
+      Returns the sibling immediately after the given item, or nil.
+      """
+      def sibling_after(item) do
+        config = build_config(item)
+        EctoOrderable.Operations.sibling_after(config)
+      end
+
+      @doc """
+      Moves an item within its set.
+
+      ## Options
+
+        * `:between` - Tuple `{before_id, after_id}`. Either may be nil.
+        * `:direction` - Either `:up` or `:down`.
+
+      """
+      def move(item, opts) do
+        config = build_config(item)
+        EctoOrderable.Operations.move(config, opts)
+      end
+
+      @doc """
+      Returns the count of items in the set.
+      """
+      def count(item_or_scope \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.count(config)
+      end
+
+      @doc """
+      Checks if the set needs rebalancing due to order values being too close together.
+
+      Returns `true` if any two adjacent items have a difference less than the threshold.
+
+      ## Options
+
+        * `:threshold` - Minimum acceptable difference between adjacent items.
+          Defaults to `0.001`.
+
+      ## Examples
+
+          if TodoOrder.needs_rebalance?(user) do
+            TodoOrder.rebalance(user)
+          end
+
+      """
+      def needs_rebalance?(item_or_scope \\ [], opts \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.needs_rebalance?(config, opts)
+      end
+
+      @doc """
+      Rebalances the order values for all items in a set to evenly spaced increments.
+
+      Useful for:
+      - Rebalancing after many fractional insertions have made values too close
+      - Initializing order values when adding ordering to existing records
+
+      ## Options
+
+        * `:order_by` - Field (or `{direction, field}` tuple) to sort by when
+          determining new positions. Defaults to the order field. Use a different
+          field (e.g., `:inserted_at`) when initializing ordering for the first time.
+
+      ## Examples
+
+          # Rebalance based on current order
+          TodoOrder.rebalance(user)
+
+          # Initialize based on creation time (oldest first)
+          TodoOrder.rebalance(user, order_by: :inserted_at)
+
+          # Initialize based on creation time (newest first)
+          TodoOrder.rebalance(user, order_by: {:desc, :inserted_at})
+
+          # For global sets
+          TemplateOrder.rebalance()
+
+      """
+      def rebalance(item_or_scope \\ [], opts \\ []) do
+        config = build_config(item_or_scope)
+        EctoOrderable.Operations.rebalance(config, opts)
+      end
+
+      # Private helpers
+
+      defp build_config(item_or_scope) do
+        scope_values = resolve_scope(item_or_scope)
+        item = if is_struct(item_or_scope, @schema), do: item_or_scope, else: nil
+
+        %{
+          repo: @repo,
+          schema: @schema,
+          scope: @scope,
+          scope_values: scope_values,
+          order_field: @order_field,
+          order_increment: @order_increment,
+          primary_key: @schema.__schema__(:primary_key),
+          item: item,
+          siblings_query_fn: &siblings/1
+        }
+      end
+
+      defp resolve_scope(item_or_scope) do
+        EctoOrderable.Scope.resolve(item_or_scope, @schema, @scope)
+      end
+
+      defp apply_scope(query, scope_values) do
+        Enum.reduce(scope_values, query, fn {field, value}, q ->
+          where(q, [s], field(s, ^field) == ^value)
+        end)
       end
     end
   end
