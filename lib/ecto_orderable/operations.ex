@@ -270,7 +270,7 @@ defmodule EctoOrderable.Operations do
     config.item
   end
 
-  defp extract(config, order_index) do
-    Map.put(config.item, config.order_field, order_index)
+  defp extract(config, new_position) do
+    Map.put(config.item, config.order_field, new_position)
   end
 end

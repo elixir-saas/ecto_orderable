@@ -12,16 +12,16 @@ defmodule Todo do
 
   schema "todos" do
     field :title, :string
-    field :order_index, :float
+    field :position, :float
     belongs_to :user, User
   end
 end
 ```
 
 Key characteristics:
-- The `order_index` field lives directly on the item being ordered
+- The `position` field lives directly on the item being ordered
 - Each user has their own independent ordering of todos
-- Moving a todo only affects that one record's `order_index`
+- Moving a todo only affects that one record's `position`
 
 ## Order Module
 
@@ -41,7 +41,7 @@ The `scope: [:user_id]` tells the library that items are partitioned by `user_id
 ```elixir
 # Get next order value for a new todo
 order = TodoOrder.next_order(user)
-Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, order_index: order})
+Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, position: order})
 
 # Reorder an existing todo
 TodoOrder.move(todo, direction: :up)

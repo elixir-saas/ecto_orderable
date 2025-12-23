@@ -25,7 +25,7 @@ defmodule ProjectItem do
 
   schema "project_items" do
     field :title, :string
-    field :order_index, :float
+    field :position, :float
     belongs_to :project, Project
     belongs_to :user, User
   end
@@ -128,7 +128,7 @@ defmodule Card do
 
   schema "cards" do
     field :title, :string
-    field :order_index, :float
+    field :position, :float
     belongs_to :board, Board
     belongs_to :column, Column
   end
@@ -167,7 +167,7 @@ def handle_event("move_to_column", %{"card_id" => card_id, "column_id" => new_co
   new_order = CardOrder.next_order(board_id: card.board_id, column_id: new_column_id)
 
   card
-  |> Ecto.Changeset.change(column_id: new_column_id, order_index: new_order)
+  |> Ecto.Changeset.change(column_id: new_column_id, position: new_order)
   |> Repo.update!()
 
   {:noreply, reload_cards(socket)}

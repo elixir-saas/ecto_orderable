@@ -28,7 +28,7 @@ defmodule Schemas.Template do
 
   schema "templates" do
     field(:name, :string)
-    field(:order_index, :float)
+    field(:position, :float)
   end
 end
 
@@ -38,7 +38,7 @@ defmodule Schemas.Item do
   use Ecto.Schema
 
   schema "items" do
-    field(:order_index, :float)
+    field(:position, :float)
     belongs_to(:set, Schemas.Set)
   end
 end
@@ -48,7 +48,7 @@ defmodule Schemas.Status do
 
   schema "statuses" do
     field(:name, :string)
-    field(:order_index, :float)
+    field(:position, :float)
     belongs_to(:project, Schemas.Project)
   end
 end
@@ -70,7 +70,7 @@ defmodule Schemas.TaskUser do
 
   @primary_key false
   schema "task_users" do
-    field(:order_index, :float)
+    field(:position, :float)
     belongs_to(:task, Schemas.Task, primary_key: true)
     belongs_to(:user, Schemas.User, primary_key: true)
   end
@@ -85,7 +85,7 @@ defmodule Schemas.ProjectItem do
 
   schema "project_items" do
     field(:title, :string)
-    field(:order_index, :float)
+    field(:position, :float)
     belongs_to(:project, Schemas.Project)
     belongs_to(:user, Schemas.User)
   end
@@ -99,7 +99,7 @@ defmodule Schemas.UserTaskPosition do
   use Ecto.Schema
 
   schema "user_task_positions" do
-    field(:order_index, :float)
+    field(:position, :float)
     belongs_to(:user, Schemas.User)
     belongs_to(:task, Schemas.Task)
   end

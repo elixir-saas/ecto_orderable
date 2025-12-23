@@ -26,7 +26,7 @@ defmodule UserTaskPosition do
   use Ecto.Schema
 
   schema "user_task_positions" do
-    field :order_index, :float
+    field :position, :float
     belongs_to :user, User
     belongs_to :task, Task
   end
@@ -141,7 +141,7 @@ def create_position_for_user(user, task) do
   |> Ecto.Changeset.change(
     user_id: user.id,
     task_id: task.id,
-    order_index: order
+    position: order
   )
   |> Repo.insert!()
 end

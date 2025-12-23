@@ -16,7 +16,7 @@ defmodule Integration.BelongsToTest do
 
     items =
       for i <- 1..5 do
-        Repo.insert!(%Schemas.Item{set: set, order_index: i * 1000.0})
+        Repo.insert!(%Schemas.Item{set: set, position: i * 1000.0})
       end
 
     %{set: set, items: items}
@@ -89,8 +89,8 @@ defmodule Integration.BelongsToTest do
     test "scopes correctly when multiple sets exist", %{set: set, items: items} do
       # Create another set with different items
       {:ok, other_set} = Repo.insert(%Schemas.Set{})
-      Repo.insert!(%Schemas.Item{set: other_set, order_index: 1000.0})
-      Repo.insert!(%Schemas.Item{set: other_set, order_index: 2000.0})
+      Repo.insert!(%Schemas.Item{set: other_set, position: 1000.0})
+      Repo.insert!(%Schemas.Item{set: other_set, position: 2000.0})
 
       # Original set should still have same count
       result = TestOrder.siblings(set) |> Repo.all()
@@ -131,12 +131,12 @@ defmodule Integration.BelongsToTest do
       result = TestOrder.move(second, direction: :up)
 
       # Should now be before first
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "returns unchanged when already first", %{items: [first | _]} do
       result = TestOrder.move(first, direction: :up)
-      assert result.order_index == first.order_index
+      assert result.position == first.position
     end
 
     test "places between previous two items", %{items: items} do
@@ -145,8 +145,8 @@ defmodule Integration.BelongsToTest do
       result = TestOrder.move(third, direction: :up)
 
       # Should be between first and second
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
   end
 
@@ -156,13 +156,13 @@ defmodule Integration.BelongsToTest do
       result = TestOrder.move(fourth, direction: :down)
 
       # Should now be after fifth (last)
-      assert result.order_index > fifth.order_index
+      assert result.position > fifth.position
     end
 
     test "returns unchanged when already last", %{items: items} do
       last = List.last(items)
       result = TestOrder.move(last, direction: :down)
-      assert result.order_index == last.order_index
+      assert result.position == last.position
     end
 
     test "places between next two items", %{items: items} do
@@ -171,8 +171,8 @@ defmodule Integration.BelongsToTest do
       result = TestOrder.move(first, direction: :down)
 
       # Should be between second and third
-      assert result.order_index > second.order_index
-      assert result.order_index < third.order_index
+      assert result.position > second.position
+      assert result.position < third.position
     end
   end
 
@@ -182,8 +182,8 @@ defmodule Integration.BelongsToTest do
 
       result = TestOrder.move(fifth, between: {first.id, second.id})
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "moves to beginning with {nil, first_id}", %{items: items} do
@@ -191,7 +191,7 @@ defmodule Integration.BelongsToTest do
 
       result = TestOrder.move(third, between: {nil, first.id})
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "moves to end with {last_id, nil}", %{items: items} do
@@ -200,16 +200,16 @@ defmodule Integration.BelongsToTest do
 
       result = TestOrder.move(first, between: {last.id, nil})
 
-      assert result.order_index > last.order_index
+      assert result.position > last.position
     end
 
     test "returns unchanged with {nil, nil} for only item" do
       {:ok, set} = Repo.insert(%Schemas.Set{})
-      item = Repo.insert!(%Schemas.Item{set: set, order_index: 1000.0})
+      item = Repo.insert!(%Schemas.Item{set: set, position: 1000.0})
 
       result = TestOrder.move(item, between: {nil, nil})
 
-      assert result.order_index == item.order_index
+      assert result.position == item.position
     end
 
     test "calculates midpoint correctly", %{items: items} do
@@ -219,7 +219,7 @@ defmodule Integration.BelongsToTest do
       result = TestOrder.move(last, between: {first.id, second.id})
 
       # Midpoint of 1000.0 and 2000.0 is 1500.0
-      assert result.order_index == 1500.0
+      assert result.position == 1500.0
     end
   end
 
@@ -251,7 +251,7 @@ defmodule Integration.BelongsToTest do
 
     test "returns false for single item" do
       {:ok, set} = Repo.insert(%Schemas.Set{})
-      Repo.insert!(%Schemas.Item{set: set, order_index: 1000.0})
+      Repo.insert!(%Schemas.Item{set: set, position: 1000.0})
       refute TestOrder.needs_rebalance?(set)
     end
   end
@@ -261,8 +261,8 @@ defmodule Integration.BelongsToTest do
       {:ok, count} = TestOrder.rebalance(set)
       assert count == 5
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
-      orders = Enum.map(items, & &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      orders = Enum.map(items, & &1.position)
 
       assert orders == [1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
     end
@@ -276,7 +276,7 @@ defmodule Integration.BelongsToTest do
       original_order =
         TestOrder.siblings(set)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
 
       {:ok, _} = TestOrder.rebalance(set)
@@ -284,7 +284,7 @@ defmodule Integration.BelongsToTest do
       new_order =
         TestOrder.siblings(set)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
 
       assert original_order == new_order
@@ -293,7 +293,7 @@ defmodule Integration.BelongsToTest do
     test "can order by different field", %{set: set} do
       {:ok, _} = TestOrder.rebalance(set, order_by: :id)
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       assert ids == Enum.sort(ids)
@@ -302,7 +302,7 @@ defmodule Integration.BelongsToTest do
     test "can order descending", %{set: set} do
       {:ok, _} = TestOrder.rebalance(set, order_by: {:desc, :id})
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       assert ids == Enum.sort(ids, :desc)
@@ -318,7 +318,7 @@ defmodule Integration.BelongsToTest do
     test "operations don't affect other sets", %{items: items} do
       # Create another set
       {:ok, other_set} = Repo.insert(%Schemas.Set{})
-      other_item = Repo.insert!(%Schemas.Item{set: other_set, order_index: 500.0})
+      other_item = Repo.insert!(%Schemas.Item{set: other_set, position: 500.0})
 
       # Move item in first set
       [_first, second | _] = items
@@ -326,21 +326,21 @@ defmodule Integration.BelongsToTest do
 
       # Other set's item should be unchanged
       reloaded = Repo.get!(Schemas.Item, other_item.id)
-      assert reloaded.order_index == 500.0
+      assert reloaded.position == 500.0
     end
 
     test "rebalance only affects target set", %{set: set} do
       # Create another set with specific order
       {:ok, other_set} = Repo.insert(%Schemas.Set{})
-      Repo.insert!(%Schemas.Item{set: other_set, order_index: 123.0})
-      Repo.insert!(%Schemas.Item{set: other_set, order_index: 456.0})
+      Repo.insert!(%Schemas.Item{set: other_set, position: 123.0})
+      Repo.insert!(%Schemas.Item{set: other_set, position: 456.0})
 
       # Rebalance first set
       TestOrder.rebalance(set)
 
       # Other set should be unchanged
-      other_items = TestOrder.siblings(other_set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
-      orders = Enum.map(other_items, & &1.order_index)
+      other_items = TestOrder.siblings(other_set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      orders = Enum.map(other_items, & &1.position)
 
       assert orders == [123.0, 456.0]
     end

@@ -80,7 +80,7 @@ defmodule MyAppWeb.TodoLive do
   alias MyApp.{Repo, Todo, TodoOrder}
 
   def mount(_params, _session, socket) do
-    todos = Todo |> where(user_id: ^socket.assigns.current_user.id) |> order_by(:order_index) |> Repo.all()
+    todos = Todo |> where(user_id: ^socket.assigns.current_user.id) |> order_by(:position) |> Repo.all()
     {:ok, assign(socket, :todos, todos)}
   end
 
@@ -94,7 +94,7 @@ defmodule MyAppWeb.TodoLive do
     TodoOrder.move(todo, between: {before_id, after_id})
 
     # Reload the list to reflect new order
-    todos = Todo |> where(user_id: ^socket.assigns.current_user.id) |> order_by(:order_index) |> Repo.all()
+    todos = Todo |> where(user_id: ^socket.assigns.current_user.id) |> order_by(:position) |> Repo.all()
     {:noreply, assign(socket, :todos, todos)}
   end
 end

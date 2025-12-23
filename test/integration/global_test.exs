@@ -14,7 +14,7 @@ defmodule Integration.GlobalTest do
   setup do
     templates =
       for i <- 1..5 do
-        Repo.insert!(%Schemas.Template{name: "Template #{i}", order_index: i * 1000.0})
+        Repo.insert!(%Schemas.Template{name: "Template #{i}", position: i * 1000.0})
       end
 
     %{templates: templates}
@@ -118,12 +118,12 @@ defmodule Integration.GlobalTest do
       [first, second | _] = templates
       result = TestGlobalOrder.move(second, direction: :up)
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "returns unchanged when already first", %{templates: [first | _]} do
       result = TestGlobalOrder.move(first, direction: :up)
-      assert result.order_index == first.order_index
+      assert result.position == first.position
     end
 
     test "places between previous two items", %{templates: templates} do
@@ -131,8 +131,8 @@ defmodule Integration.GlobalTest do
 
       result = TestGlobalOrder.move(third, direction: :up)
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
   end
 
@@ -141,13 +141,13 @@ defmodule Integration.GlobalTest do
       [_first, _second, _third, fourth, fifth] = templates
       result = TestGlobalOrder.move(fourth, direction: :down)
 
-      assert result.order_index > fifth.order_index
+      assert result.position > fifth.position
     end
 
     test "returns unchanged when already last", %{templates: templates} do
       last = List.last(templates)
       result = TestGlobalOrder.move(last, direction: :down)
-      assert result.order_index == last.order_index
+      assert result.position == last.position
     end
 
     test "places between next two items", %{templates: templates} do
@@ -155,8 +155,8 @@ defmodule Integration.GlobalTest do
 
       result = TestGlobalOrder.move(first, direction: :down)
 
-      assert result.order_index > second.order_index
-      assert result.order_index < third.order_index
+      assert result.position > second.position
+      assert result.position < third.position
     end
   end
 
@@ -166,8 +166,8 @@ defmodule Integration.GlobalTest do
 
       result = TestGlobalOrder.move(fifth, between: {first.id, second.id})
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "moves to beginning with {nil, first_id}", %{templates: templates} do
@@ -175,7 +175,7 @@ defmodule Integration.GlobalTest do
 
       result = TestGlobalOrder.move(third, between: {nil, first.id})
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "moves to end with {last_id, nil}", %{templates: templates} do
@@ -184,16 +184,16 @@ defmodule Integration.GlobalTest do
 
       result = TestGlobalOrder.move(first, between: {last.id, nil})
 
-      assert result.order_index > last.order_index
+      assert result.position > last.position
     end
 
     test "returns unchanged with {nil, nil} for only item" do
       Repo.delete_all(Schemas.Template)
-      template = Repo.insert!(%Schemas.Template{name: "Only", order_index: 1000.0})
+      template = Repo.insert!(%Schemas.Template{name: "Only", position: 1000.0})
 
       result = TestGlobalOrder.move(template, between: {nil, nil})
 
-      assert result.order_index == template.order_index
+      assert result.position == template.position
     end
 
     test "calculates midpoint correctly", %{templates: templates} do
@@ -203,7 +203,7 @@ defmodule Integration.GlobalTest do
       result = TestGlobalOrder.move(last, between: {first.id, second.id})
 
       # Midpoint of 1000.0 and 2000.0 is 1500.0
-      assert result.order_index == 1500.0
+      assert result.position == 1500.0
     end
   end
 
@@ -233,7 +233,7 @@ defmodule Integration.GlobalTest do
 
     test "returns false for single item" do
       Repo.delete_all(Schemas.Template)
-      Repo.insert!(%Schemas.Template{name: "Only", order_index: 1000.0})
+      Repo.insert!(%Schemas.Template{name: "Only", position: 1000.0})
       refute TestGlobalOrder.needs_rebalance?()
     end
   end
@@ -246,9 +246,9 @@ defmodule Integration.GlobalTest do
       templates =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
-      orders = Enum.map(templates, & &1.order_index)
+      orders = Enum.map(templates, & &1.position)
       assert orders == [1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
     end
 
@@ -261,7 +261,7 @@ defmodule Integration.GlobalTest do
       original_order =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
 
       {:ok, _} = TestGlobalOrder.rebalance()
@@ -269,7 +269,7 @@ defmodule Integration.GlobalTest do
       new_order =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.id)
 
       assert original_order == new_order
@@ -281,7 +281,7 @@ defmodule Integration.GlobalTest do
       templates =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
       ids = Enum.map(templates, & &1.id)
       assert ids == Enum.sort(ids)
@@ -293,7 +293,7 @@ defmodule Integration.GlobalTest do
       templates =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
       names = Enum.map(templates, & &1.name)
       assert names == Enum.sort(names)
@@ -305,7 +305,7 @@ defmodule Integration.GlobalTest do
       templates =
         TestGlobalOrder.siblings([])
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
       ids = Enum.map(templates, & &1.id)
       assert ids == Enum.sort(ids, :desc)
@@ -320,7 +320,7 @@ defmodule Integration.GlobalTest do
   describe "adding new items" do
     test "next_order provides correct value for new item" do
       order = TestGlobalOrder.next_order()
-      new_template = Repo.insert!(%Schemas.Template{name: "New", order_index: order})
+      new_template = Repo.insert!(%Schemas.Template{name: "New", position: order})
 
       # Should now be last
       assert TestGlobalOrder.sibling_after(new_template) == nil
@@ -331,7 +331,7 @@ defmodule Integration.GlobalTest do
       first_order = TestGlobalOrder.first_order()
       new_order = first_order - 1000.0
 
-      new_template = Repo.insert!(%Schemas.Template{name: "New First", order_index: new_order})
+      new_template = Repo.insert!(%Schemas.Template{name: "New First", position: new_order})
 
       assert TestGlobalOrder.sibling_before(new_template) == nil
       assert TestGlobalOrder.first_order() == new_order
@@ -339,9 +339,9 @@ defmodule Integration.GlobalTest do
 
     test "can insert between existing items", %{templates: templates} do
       [first, second | _] = templates
-      new_order = (first.order_index + second.order_index) / 2
+      new_order = (first.position + second.position) / 2
 
-      new_template = Repo.insert!(%Schemas.Template{name: "Inserted", order_index: new_order})
+      new_template = Repo.insert!(%Schemas.Template{name: "Inserted", position: new_order})
 
       assert TestGlobalOrder.sibling_before(new_template).id == first.id
       assert TestGlobalOrder.sibling_after(new_template).id == second.id

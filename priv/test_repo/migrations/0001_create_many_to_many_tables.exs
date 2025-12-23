@@ -14,7 +14,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateManyToManyTables do
     create table(:task_users, primary_key: false) do
       add :task_id, references(:tasks), null: false, primary_key: true
       add :user_id, references(:users), null: false, primary_key: true
-      add :order_index, :float, null: false
+      add :position, :float, null: false
     end
 
     create unique_index(:task_users, [:task_id, :user_id])

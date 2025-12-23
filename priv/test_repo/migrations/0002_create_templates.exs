@@ -4,7 +4,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateTemplates do
   def change do
     create table(:templates) do
       add :name, :string
-      add :order_index, :float
+      add :position, :float
     end
   end
 end

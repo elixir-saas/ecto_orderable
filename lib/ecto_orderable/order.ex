@@ -8,9 +8,7 @@ defmodule EctoOrderable.Order do
         use EctoOrderable.Order,
           repo: MyApp.Repo,
           schema: Todo,
-          scope: [:user_id],
-          order_field: :order_index,
-          order_increment: 1000.0
+          scope: [:user_id]
       end
 
       # Get next order value for a new todo
@@ -37,7 +35,7 @@ defmodule EctoOrderable.Order do
       Format: `[field: {JoinedSchema, :foreign_key}]` where `field` is the name of
       the scope field on `JoinedSchema`, and `:foreign_key` is the field on the
       current schema that references `JoinedSchema`.
-    * `:order_field` - The field storing the order value. Defaults to `:order_index`.
+    * `:order_field` - The field storing the order value. Defaults to `:position`.
     * `:order_increment` - The default spacing between items. Defaults to `1000.0`.
 
   ## Overriding siblings_query
@@ -86,7 +84,7 @@ defmodule EctoOrderable.Order do
 
   """
 
-  @default_order_field :order_index
+  @default_order_field :position
   @default_order_increment 1000.0
 
   defmacro __using__(opts) do

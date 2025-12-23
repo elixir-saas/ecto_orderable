@@ -24,7 +24,7 @@ defmodule Integration.MultiScopeTest do
           title: "U1P1 Item #{i}",
           project_id: project1.id,
           user_id: user1.id,
-          order_index: i * 1000.0
+          position: i * 1000.0
         })
       end
 
@@ -35,7 +35,7 @@ defmodule Integration.MultiScopeTest do
           title: "U1P2 Item #{i}",
           project_id: project2.id,
           user_id: user1.id,
-          order_index: i * 1000.0
+          position: i * 1000.0
         })
       end
 
@@ -46,7 +46,7 @@ defmodule Integration.MultiScopeTest do
           title: "U2P1 Item #{i}",
           project_id: project1.id,
           user_id: user2.id,
-          order_index: i * 1000.0
+          position: i * 1000.0
         })
       end
 
@@ -129,8 +129,8 @@ defmodule Integration.MultiScopeTest do
       user2_project1_items: u2_items
     } do
       # Record original orders
-      p2_original = Enum.map(p2_items, & &1.order_index)
-      u2_original = Enum.map(u2_items, & &1.order_index)
+      p2_original = Enum.map(p2_items, & &1.position)
+      u2_original = Enum.map(u2_items, & &1.position)
 
       # Move item in user1/project1
       [_first, second | _] = p1_items
@@ -140,8 +140,8 @@ defmodule Integration.MultiScopeTest do
       p2_reloaded =
         TestMultiScopeOrder.siblings(List.first(p2_items))
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert p2_reloaded == p2_original
 
@@ -149,8 +149,8 @@ defmodule Integration.MultiScopeTest do
       u2_reloaded =
         TestMultiScopeOrder.siblings(List.first(u2_items))
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert u2_reloaded == u2_original
     end
@@ -162,8 +162,8 @@ defmodule Integration.MultiScopeTest do
       user2_project1_items: u2_items
     } do
       # Record original orders
-      p2_original = Enum.map(p2_items, & &1.order_index)
-      u2_original = Enum.map(u2_items, & &1.order_index)
+      p2_original = Enum.map(p2_items, & &1.position)
+      u2_original = Enum.map(u2_items, & &1.position)
 
       # Rebalance user1/project1
       {:ok, count} = TestMultiScopeOrder.rebalance(project_id: project1.id, user_id: user1.id)
@@ -173,8 +173,8 @@ defmodule Integration.MultiScopeTest do
       p2_reloaded =
         TestMultiScopeOrder.siblings(List.first(p2_items))
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert p2_reloaded == p2_original
 
@@ -182,8 +182,8 @@ defmodule Integration.MultiScopeTest do
       u2_reloaded =
         TestMultiScopeOrder.siblings(List.first(u2_items))
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert u2_reloaded == u2_original
     end
@@ -224,7 +224,7 @@ defmodule Integration.MultiScopeTest do
       [first, second | _] = items
       result = TestMultiScopeOrder.move(second, direction: :up)
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move with between using ids", %{user1_project1_items: items} do
@@ -232,8 +232,8 @@ defmodule Integration.MultiScopeTest do
 
       result = TestMultiScopeOrder.move(third, between: {first.id, second.id})
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "move to beginning", %{user1_project1_items: items} do
@@ -241,7 +241,7 @@ defmodule Integration.MultiScopeTest do
 
       result = TestMultiScopeOrder.move(third, between: {nil, first.id})
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move to end", %{user1_project1_items: items} do
@@ -249,7 +249,7 @@ defmodule Integration.MultiScopeTest do
 
       result = TestMultiScopeOrder.move(first, between: {third.id, nil})
 
-      assert result.order_index > third.order_index
+      assert result.position > third.position
     end
   end
 
@@ -261,9 +261,9 @@ defmodule Integration.MultiScopeTest do
       items =
         TestMultiScopeOrder.siblings(project_id: project1.id, user_id: user1.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
-      orders = Enum.map(items, & &1.order_index)
+      orders = Enum.map(items, & &1.position)
       assert orders == [1000.0, 2000.0, 3000.0]
     end
 
@@ -277,7 +277,7 @@ defmodule Integration.MultiScopeTest do
       items =
         TestMultiScopeOrder.siblings(project_id: project1.id, user_id: user2.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
       ids = Enum.map(items, & &1.id)
       assert ids == Enum.sort(ids, :desc)
@@ -293,7 +293,7 @@ defmodule Integration.MultiScopeTest do
           title: "New Item",
           project_id: project1.id,
           user_id: user1.id,
-          order_index: order
+          position: order
         })
 
       # Should be last

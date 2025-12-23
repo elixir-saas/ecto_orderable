@@ -13,7 +13,7 @@ defmodule EctoOrderable do
 
       # Get next order value for a new todo
       order = TodoOrder.next_order(user)
-      Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, order_index: order})
+      Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, position: order})
 
       # Reorder existing items
       TodoOrder.move(todo, direction: :up)

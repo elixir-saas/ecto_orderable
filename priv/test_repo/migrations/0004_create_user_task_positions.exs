@@ -4,7 +4,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateUserTaskPositions do
   def change do
     create table(:statuses) do
       add :name, :string
-      add :order_index, :float
+      add :position, :float
       add :project_id, references(:projects)
     end
 
@@ -14,7 +14,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateUserTaskPositions do
     end
 
     create table(:user_task_positions) do
-      add :order_index, :float
+      add :position, :float
       add :user_id, references(:users)
       add :task_id, references(:tasks)
     end

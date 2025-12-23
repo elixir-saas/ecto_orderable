@@ -8,7 +8,7 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateProjectItems do
 
     create table(:project_items) do
       add :title, :string
-      add :order_index, :float
+      add :position, :float
       add :project_id, references(:projects)
       add :user_id, references(:users)
     end

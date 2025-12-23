@@ -20,16 +20,55 @@ end
 
 # Get next order value for a new todo
 order = TodoOrder.next_order(user)
-Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, order_index: order})
+Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, position: order})
 
 # Reorder an existing todo
 TodoOrder.move(todo, direction: :up)
 TodoOrder.move(todo, between: {id_above, id_below})
 ```
 
+## Adding the Position Field
+
+To enable ordering on a table, add a `position` column (float) via migration:
+
+```elixir
+defmodule MyApp.Repo.Migrations.AddPositionToTodos do
+  use Ecto.Migration
+
+  def change do
+    alter table(:todos) do
+      add :position, :float
+    end
+  end
+end
+```
+
+Then add the field to your schema:
+
+```elixir
+defmodule MyApp.Todo do
+  use Ecto.Schema
+
+  schema "todos" do
+    field :title, :string
+    field :position, :float
+    belongs_to :user, MyApp.User
+    timestamps()
+  end
+end
+```
+
+The field is nullable by default, which works well when adding ordering to existing records—you can backfill values using `rebalance/2` after deployment.
+
+For new tables, you may prefer to make the field non-null with a default:
+
+```elixir
+add :position, :float, null: false, default: 0.0
+```
+
 ## Initializing Order for Existing Records
 
-When adding ordering to an existing feature, your records won't have `order_index` values yet. Use `rebalance/2` to initialize them based on another field:
+When adding ordering to an existing feature, your records won't have `position` values yet. Use `rebalance/2` to initialize them based on another field:
 
 ```elixir
 # Initialize order based on creation time
@@ -58,7 +97,7 @@ This library handles ordering mechanics only. Authorization is your application'
 
 1. **Authorization happens before calling the library.** The library does not check whether the current user is allowed to reorder items. Validate permissions in your application layer before calling `move/2` or other functions.
 
-2. **Ordering is a set-level operation.** Even though you update one item's `order_index`, the meaning of "position 3" is relative to all siblings. If a user can reorder within a set, they implicitly have access to that set's ordering.
+2. **Ordering is a set-level operation.** Even though you update one item's `position`, the meaning of "position 3" is relative to all siblings. If a user can reorder within a set, they implicitly have access to that set's ordering.
 
 3. **The `between:` option trusts the caller.** When you call `move(item, between: {id_above, id_below})`, the library does not verify those IDs belong to the same set. Passing IDs from a different set will produce nonsensical results.
 

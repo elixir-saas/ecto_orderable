@@ -14,8 +14,8 @@ defmodule EctoOrderable.Query do
         where: t.user_id == ^user.id,
         select: %{
           todo: t,
-          is_first: t.order_index == ^first_order,
-          is_last: t.order_index == ^last_order
+          is_first: t.position == ^first_order,
+          is_last: t.position == ^last_order
         }
       )
 

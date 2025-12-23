@@ -29,7 +29,7 @@ defmodule Integration.ManyToManyTest do
         Repo.insert!(%Schemas.TaskUser{
           task_id: task.id,
           user_id: user.id,
-          order_index: index * 1000.0
+          position: index * 1000.0
         })
       end)
 
@@ -70,7 +70,7 @@ defmodule Integration.ManyToManyTest do
     test "move with direction works", %{task_users: task_users} do
       [first, second | _] = task_users
       result = TestTaskUserOrder.move(second, direction: :up)
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move with between using composite key map", %{task_users: task_users} do
@@ -85,8 +85,8 @@ defmodule Integration.ManyToManyTest do
           }
         )
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "move with between using simple task_id (inherits scope)", %{
@@ -100,8 +100,8 @@ defmodule Integration.ManyToManyTest do
       # The user_id is inherited from the item being moved
       result = TestTaskUserOrder.move(third, between: {task1.id, task2.id})
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "move to beginning with simple id", %{task_users: task_users, tasks: tasks} do
@@ -109,7 +109,7 @@ defmodule Integration.ManyToManyTest do
       [task1 | _] = tasks
 
       result = TestTaskUserOrder.move(third, between: {nil, task1.id})
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move to end with simple id", %{task_users: task_users, tasks: tasks} do
@@ -118,7 +118,7 @@ defmodule Integration.ManyToManyTest do
 
       result = TestTaskUserOrder.move(first, between: {last_task.id, nil})
       last_task_user = List.last(task_users)
-      assert result.order_index > last_task_user.order_index
+      assert result.position > last_task_user.position
     end
 
     test "move to beginning with between", %{task_users: task_users} do
@@ -129,7 +129,7 @@ defmodule Integration.ManyToManyTest do
           between: {nil, %{task_id: first.task_id, user_id: first.user_id}}
         )
 
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move to end with between", %{task_users: task_users} do
@@ -141,7 +141,7 @@ defmodule Integration.ManyToManyTest do
           between: {%{task_id: last.task_id, user_id: last.user_id}, nil}
         )
 
-      assert result.order_index > last.order_index
+      assert result.position > last.position
     end
 
     test "sibling_before works", %{task_users: task_users} do
@@ -179,8 +179,8 @@ defmodule Integration.ManyToManyTest do
       assert count == 5
 
       # Verify all values are evenly spaced
-      items = TestTaskUserOrder.siblings(user) |> Repo.all() |> Enum.sort_by(& &1.order_index)
-      orders = Enum.map(items, & &1.order_index)
+      items = TestTaskUserOrder.siblings(user) |> Repo.all() |> Enum.sort_by(& &1.position)
+      orders = Enum.map(items, & &1.position)
       assert orders == [1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
     end
   end
@@ -194,20 +194,20 @@ defmodule Integration.ManyToManyTest do
       [task1, task2, task3 | _] = tasks
 
       # User A orders: task1, task2, task3
-      Repo.insert!(%Schemas.TaskUser{task_id: task1.id, user_id: user_a.id, order_index: 1000.0})
-      Repo.insert!(%Schemas.TaskUser{task_id: task2.id, user_id: user_a.id, order_index: 2000.0})
-      Repo.insert!(%Schemas.TaskUser{task_id: task3.id, user_id: user_a.id, order_index: 3000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task1.id, user_id: user_a.id, position: 1000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task2.id, user_id: user_a.id, position: 2000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task3.id, user_id: user_a.id, position: 3000.0})
 
       # User B orders: task3, task1, task2 (different order)
-      Repo.insert!(%Schemas.TaskUser{task_id: task3.id, user_id: user_b.id, order_index: 1000.0})
-      Repo.insert!(%Schemas.TaskUser{task_id: task1.id, user_id: user_b.id, order_index: 2000.0})
-      Repo.insert!(%Schemas.TaskUser{task_id: task2.id, user_id: user_b.id, order_index: 3000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task3.id, user_id: user_b.id, position: 1000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task1.id, user_id: user_b.id, position: 2000.0})
+      Repo.insert!(%Schemas.TaskUser{task_id: task2.id, user_id: user_b.id, position: 3000.0})
 
       # Verify User A's order
       user_a_tasks =
         TestTaskUserOrder.siblings(user_a)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.task_id)
 
       assert user_a_tasks == [task1.id, task2.id, task3.id]
@@ -216,7 +216,7 @@ defmodule Integration.ManyToManyTest do
       user_b_tasks =
         TestTaskUserOrder.siblings(user_b)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Enum.map(& &1.task_id)
 
       assert user_b_tasks == [task3.id, task1.id, task2.id]
@@ -233,7 +233,7 @@ defmodule Integration.ManyToManyTest do
           Repo.insert!(%Schemas.TaskUser{
             task_id: task.id,
             user_id: other_user.id,
-            order_index: index * 1000.0
+            position: index * 1000.0
           })
         end)
 
@@ -245,10 +245,10 @@ defmodule Integration.ManyToManyTest do
       reloaded =
         TestTaskUserOrder.siblings(other_user)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
-      original_orders = Enum.map(other_task_users, & &1.order_index)
-      reloaded_orders = Enum.map(reloaded, & &1.order_index)
+      original_orders = Enum.map(other_task_users, & &1.position)
+      reloaded_orders = Enum.map(reloaded, & &1.position)
 
       assert original_orders == reloaded_orders
     end
@@ -262,13 +262,13 @@ defmodule Integration.ManyToManyTest do
       Repo.insert!(%Schemas.TaskUser{
         task_id: task1.id,
         user_id: other_user.id,
-        order_index: 123.0
+        position: 123.0
       })
 
       Repo.insert!(%Schemas.TaskUser{
         task_id: task2.id,
         user_id: other_user.id,
-        order_index: 456.0
+        position: 456.0
       })
 
       # Rebalance original user
@@ -278,8 +278,8 @@ defmodule Integration.ManyToManyTest do
       other_orders =
         TestTaskUserOrder.siblings(other_user)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert other_orders == [123.0, 456.0]
     end
@@ -296,8 +296,8 @@ defmodule Integration.ManyToManyTest do
       # Move fifth between first and second using just task_ids
       result = TestTaskUserOrder.move(fifth, between: {task1.id, task2.id})
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
       # Verify it's still the same user
       assert result.user_id == fifth.user_id
     end
@@ -309,7 +309,7 @@ defmodule Integration.ManyToManyTest do
       [first, second, third | _] =
         TestTaskUserOrder.siblings(user)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
       result =
         TestTaskUserOrder.move(third,
@@ -319,8 +319,8 @@ defmodule Integration.ManyToManyTest do
           }
         )
 
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
   end
 
@@ -334,7 +334,7 @@ defmodule Integration.ManyToManyTest do
         Repo.insert!(%Schemas.TaskUser{
           task_id: new_task.id,
           user_id: user.id,
-          order_index: order
+          position: order
         })
 
       # Should now be last

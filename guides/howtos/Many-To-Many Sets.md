@@ -2,7 +2,7 @@
 
 A "many-to-many" set is useful in team environments, as it allows the same records to exist in multiple ordered sets simultaneously.
 
-For example, `TaskUser` might be used to join between `Task` and `User` records. Placing the `:order_index` field on `TaskUser` will define a set of tasks each belonging to specific users. In doing so, we allow tasks to be ordered independently by each user in an organization.
+For example, `TaskUser` might be used to join between `Task` and `User` records. Placing the `:position` field on `TaskUser` will define a set of tasks each belonging to specific users. In doing so, we allow tasks to be ordered independently by each user in an organization.
 
 ## Schema
 
@@ -21,7 +21,7 @@ defmodule TaskUser do
 
   @primary_key false
   schema "task_users" do
-    field :order_index, :float
+    field :position, :float
     belongs_to :task, Task, primary_key: true
     belongs_to :user, User, primary_key: true
   end
@@ -31,7 +31,7 @@ end
 Note: Join tables often use composite primary keys (`task_id` + `user_id`) rather than a separate `id` field.
 
 Key characteristics:
-- The `order_index` field lives on the **join table**, not on the task itself
+- The `position` field lives on the **join table**, not on the task itself
 - The same task can have different positions for different users
 - The "item" being moved is the `TaskUser` join record, not the `Task`
 
@@ -64,7 +64,7 @@ TaskUserOrder.move(task_user, between: {above_task.id, below_task.id})
 
 # Get next order for assigning a new task to a user
 order = TaskUserOrder.next_order(user)
-Repo.insert!(%TaskUser{task_id: task.id, user_id: user.id, order_index: order})
+Repo.insert!(%TaskUser{task_id: task.id, user_id: user.id, position: order})
 ```
 
 The `between:` option is smart about composite keys. Since the `user_id` is already known from the `task_user` being moved, you only need to specify the `task_id` of the siblings. The library figures out that `task_id` is the "identity" field (primary key minus scope).

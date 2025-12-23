@@ -19,13 +19,13 @@ defmodule Integration.ScopeJoinTest do
     {:ok, user2} = Repo.insert(%Schemas.User{name: "User 2"})
 
     {:ok, todo_status} =
-      Repo.insert(%Schemas.Status{name: "To Do", project_id: project.id, order_index: 1000.0})
+      Repo.insert(%Schemas.Status{name: "To Do", project_id: project.id, position: 1000.0})
 
     {:ok, doing_status} =
-      Repo.insert(%Schemas.Status{name: "Doing", project_id: project.id, order_index: 2000.0})
+      Repo.insert(%Schemas.Status{name: "Doing", project_id: project.id, position: 2000.0})
 
     {:ok, done_status} =
-      Repo.insert(%Schemas.Status{name: "Done", project_id: project.id, order_index: 3000.0})
+      Repo.insert(%Schemas.Status{name: "Done", project_id: project.id, position: 3000.0})
 
     # Create tasks in different statuses
     {:ok, task1} =
@@ -61,22 +61,22 @@ defmodule Integration.ScopeJoinTest do
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user1.id,
         task_id: task1.id,
-        order_index: 1000.0
+        position: 1000.0
       }),
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user1.id,
         task_id: task2.id,
-        order_index: 2000.0
+        position: 2000.0
       }),
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user1.id,
         task_id: task3.id,
-        order_index: 1000.0
+        position: 1000.0
       }),
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user1.id,
         task_id: task4.id,
-        order_index: 1000.0
+        position: 1000.0
       })
     ]
 
@@ -85,17 +85,17 @@ defmodule Integration.ScopeJoinTest do
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user2.id,
         task_id: task2.id,
-        order_index: 1000.0
+        position: 1000.0
       }),
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user2.id,
         task_id: task1.id,
-        order_index: 2000.0
+        position: 2000.0
       }),
       Repo.insert!(%Schemas.UserTaskPosition{
         user_id: user2.id,
         task_id: task3.id,
-        order_index: 1000.0
+        position: 1000.0
       })
     ]
 
@@ -190,13 +190,13 @@ defmodule Integration.ScopeJoinTest do
       positions =
         TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
         |> Repo.preload(:task)
 
       [first, second] = positions
 
       result = TestScopeJoinOrder.move(second, direction: :up)
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move with between using ids", %{user1: user1, todo_status: status} do
@@ -206,11 +206,11 @@ defmodule Integration.ScopeJoinTest do
         |> Repo.all()
         |> Repo.preload(:task)
 
-      [first, second] = Enum.sort_by(positions, & &1.order_index)
+      [first, second] = Enum.sort_by(positions, & &1.position)
 
       # Move second between nil and first (to beginning)
       result = TestScopeJoinOrder.move(second, between: {nil, first.id})
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
   end
 
@@ -222,9 +222,9 @@ defmodule Integration.ScopeJoinTest do
       positions =
         TestScopeJoinOrder.siblings(user_id: user1.id, status_id: status.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
 
-      orders = Enum.map(positions, & &1.order_index)
+      orders = Enum.map(positions, & &1.position)
       assert orders == [1000.0, 2000.0]
     end
   end
@@ -239,8 +239,8 @@ defmodule Integration.ScopeJoinTest do
       user2_original =
         TestScopeJoinOrder.siblings(user_id: user2.id, status_id: status.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       # Rebalance user1
       TestScopeJoinOrder.rebalance(user_id: user1.id, status_id: status.id)
@@ -249,8 +249,8 @@ defmodule Integration.ScopeJoinTest do
       user2_after =
         TestScopeJoinOrder.siblings(user_id: user2.id, status_id: status.id)
         |> Repo.all()
-        |> Enum.sort_by(& &1.order_index)
-        |> Enum.map(& &1.order_index)
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(& &1.position)
 
       assert user2_original == user2_after
     end
@@ -264,7 +264,7 @@ defmodule Integration.ScopeJoinTest do
       doing_original =
         TestScopeJoinOrder.siblings(user_id: user1.id, status_id: doing.id)
         |> Repo.all()
-        |> Enum.map(& &1.order_index)
+        |> Enum.map(& &1.position)
 
       # Rebalance todo
       TestScopeJoinOrder.rebalance(user_id: user1.id, status_id: todo.id)
@@ -273,7 +273,7 @@ defmodule Integration.ScopeJoinTest do
       doing_after =
         TestScopeJoinOrder.siblings(user_id: user1.id, status_id: doing.id)
         |> Repo.all()
-        |> Enum.map(& &1.order_index)
+        |> Enum.map(& &1.position)
 
       assert doing_original == doing_after
     end

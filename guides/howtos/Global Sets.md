@@ -12,14 +12,14 @@ defmodule OnboardingTaskTemplate do
 
   schema "onboarding_task_templates" do
     field :title, :string
-    field :order_index, :float
+    field :position, :float
     field :active, :boolean, default: true
   end
 end
 ```
 
 Key characteristics:
-- The `order_index` field lives directly on the item
+- The `position` field lives directly on the item
 - There is only ONE ordering for all records (no per-user or per-parent variation)
 - The "set" is effectively the entire table (or a filtered subset)
 
@@ -41,7 +41,7 @@ The `scope: []` (empty list) indicates there are no partitioning fields - all re
 ```elixir
 # Get next order value for a new template
 order = TemplateOrder.next_order()
-Repo.insert!(%OnboardingTaskTemplate{title: "Welcome", order_index: order})
+Repo.insert!(%OnboardingTaskTemplate{title: "Welcome", position: order})
 
 # Reorder an existing template
 TemplateOrder.move(template, direction: :up)
@@ -77,4 +77,4 @@ end
 
 **Filtered global**: "All active templates" vs "all archived templates" - use separate Order modules with different `siblings_query/2` overrides, as shown above.
 
-**Multiple global orderings**: Same records ordered differently for different purposes. Use multiple `order_index` fields (e.g., `priority_order`, `display_order`) with separate Order modules specifying different `order_field:` options.
+**Multiple global orderings**: Same records ordered differently for different purposes. Use multiple `position` fields (e.g., `priority_order`, `display_order`) with separate Order modules specifying different `order_field:` options.

@@ -23,7 +23,7 @@ end
 ```elixir
 # In a migration
 alter table(:todos) do
-  add :order_index, :float
+  add :position, :float
 end
 ```
 
@@ -45,7 +45,7 @@ alias MyApp.{Repo, Todo, TodoOrder}
 
 # Get next order value for a new todo
 order = TodoOrder.next_order(user)
-Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, order_index: order})
+Repo.insert!(%Todo{title: "Buy milk", user_id: user.id, position: order})
 
 # Reorder with direction
 TodoOrder.move(todo, direction: :up)
@@ -57,7 +57,7 @@ TodoOrder.move(todo, between: {id_above, id_below})
 
 ## How It Works
 
-EctoOrderable uses **fractional indexing** - each item has a float `order_index` that determines its position. When you move an item between two others, it calculates the midpoint:
+EctoOrderable uses **fractional indexing** - each item has a float `position` that determines its position. When you move an item between two others, it calculates the midpoint:
 
 ```
 Item A: 1000.0
@@ -95,13 +95,13 @@ TodoOrder.move(todo, direction: :up)
 Each user can have their own ordering of shared tasks:
 
 ```elixir
-# Schema: TaskUser join table with order_index
+# Schema: TaskUser join table with position
 defmodule TaskUser do
   use Ecto.Schema
 
   @primary_key false
   schema "task_users" do
-    field :order_index, :float
+    field :position, :float
     belongs_to :task, Task, primary_key: true
     belongs_to :user, User, primary_key: true
   end
@@ -234,7 +234,7 @@ defmodule MyOrder do
     repo: MyApp.Repo,           # Required: Ecto repo
     schema: MyApp.Item,          # Required: Ecto schema
     scope: [:parent_id],         # Required: Fields that partition sets ([] for global)
-    order_field: :order_index,   # Optional: Field name (default: :order_index)
+    order_field: :position,   # Optional: Field name (default: :position)
     order_increment: 1000.0      # Optional: Spacing between items (default: 1000.0)
 end
 ```

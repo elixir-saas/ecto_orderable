@@ -8,7 +8,7 @@ defmodule EctoOrderableTest do
 
     items =
       for i <- 0..10 do
-        Repo.insert!(%Schemas.Item{set: set, order_index: i * 1000.0})
+        Repo.insert!(%Schemas.Item{set: set, position: i * 1000.0})
       end
 
     %{set: set, items: items}
@@ -83,24 +83,24 @@ defmodule EctoOrderableTest do
     test "move up", %{items: items} do
       [_first, second | _] = items
       result = TestOrder.move(second, direction: :up)
-      assert result.order_index < 0.0
+      assert result.position < 0.0
     end
 
     test "move up when already first returns unchanged", %{items: [first | _]} do
       result = TestOrder.move(first, direction: :up)
-      assert result.order_index == first.order_index
+      assert result.position == first.position
     end
 
     test "move down", %{items: items} do
       second_to_last = Enum.at(items, -2)
       result = TestOrder.move(second_to_last, direction: :down)
-      assert result.order_index > 10000.0
+      assert result.position > 10000.0
     end
 
     test "move down when already last returns unchanged", %{items: items} do
       last = List.last(items)
       result = TestOrder.move(last, direction: :down)
-      assert result.order_index == last.order_index
+      assert result.position == last.position
     end
   end
 
@@ -109,26 +109,26 @@ defmodule EctoOrderableTest do
       [first, second, third | _] = items
       # Move third between first and second
       result = TestOrder.move(third, between: {first.id, second.id})
-      assert result.order_index > first.order_index
-      assert result.order_index < second.order_index
+      assert result.position > first.position
+      assert result.position < second.position
     end
 
     test "move to beginning", %{items: items} do
       [first, _second, third | _] = items
       result = TestOrder.move(third, between: {nil, first.id})
-      assert result.order_index < first.order_index
+      assert result.position < first.position
     end
 
     test "move to end", %{items: items} do
       last = List.last(items)
       [first | _] = items
       result = TestOrder.move(first, between: {last.id, nil})
-      assert result.order_index > last.order_index
+      assert result.position > last.position
     end
 
     test "move when only item in set returns unchanged", %{items: [first | _]} do
       result = TestOrder.move(first, between: {nil, nil})
-      assert result.order_index == first.order_index
+      assert result.position == first.position
     end
   end
 
@@ -155,7 +155,7 @@ defmodule EctoOrderableTest do
       TestOrder.move(second, between: {first.id, fourth.id})
 
       # Keep moving to make values closer and closer
-      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       [a, b | _] = reloaded
 
       # Move repeatedly between first two to create tiny gaps
@@ -177,11 +177,11 @@ defmodule EctoOrderableTest do
       {:ok, count} = TestOrder.rebalance(set)
       assert count == 11
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
 
       # Should be evenly spaced at 1000, 2000, 3000, ...
       Enum.each(Enum.with_index(items, 1), fn {item, index} ->
-        assert item.order_index == index * 1000.0
+        assert item.position == index * 1000.0
       end)
     end
 
@@ -194,8 +194,8 @@ defmodule EctoOrderableTest do
       # Now rebalance to clean values
       {:ok, _} = TestOrder.rebalance(set)
 
-      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
-      orders = Enum.map(reloaded, & &1.order_index)
+      reloaded = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
+      orders = Enum.map(reloaded, & &1.position)
 
       # All values should be whole thousands
       assert Enum.all?(orders, fn o -> o == Float.round(o / 1000) * 1000 end)
@@ -205,7 +205,7 @@ defmodule EctoOrderableTest do
       # Rebalance ordering by id
       {:ok, _} = TestOrder.rebalance(set, order_by: :id)
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       # IDs should be in ascending order (since we ordered by :id)
@@ -216,7 +216,7 @@ defmodule EctoOrderableTest do
       # Rebalance ordering by id descending
       {:ok, _} = TestOrder.rebalance(set, order_by: {:desc, :id})
 
-      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.order_index)
+      items = TestOrder.siblings(set) |> Repo.all() |> Enum.sort_by(& &1.position)
       ids = Enum.map(items, & &1.id)
 
       # IDs should be in descending order
