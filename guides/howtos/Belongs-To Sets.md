@@ -55,7 +55,7 @@ TodoOrder.siblings(user) |> Repo.all()
 
 ## Common Variations
 
-**Multiple scope fields**: A todo might belong to both a `user_id` and a `project_id`. See the [Multi-Scope Sets](Multi-Scope%20Sets.md) guide for this pattern.
+**Multiple scope fields**: A todo might belong to both a `user_id` and a `project_id`. See the [Multi-Scope Sets](Multi-Scope Sets.md) guide for this pattern.
 
 **Self-referential**: Comments belonging to a parent comment (nested threads). Use `scope: [:parent_id]` where `parent_id` references the same table. Root comments with `parent_id: nil` form their own set.
 
