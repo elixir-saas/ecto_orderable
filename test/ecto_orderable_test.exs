@@ -14,6 +14,20 @@ defmodule EctoOrderableTest do
     %{set: set, items: items}
   end
 
+  test "version matches README" do
+    version = EctoOrderable.MixProject.project()[:version]
+
+    deps_snippet = """
+    def deps do
+      [
+        {:ecto_orderable, "~> #{version}"}
+      ]
+    end
+    """
+
+    assert File.read!("README.md") =~ deps_snippet
+  end
+
   describe "first_order/1" do
     test "with parent struct", %{set: set} do
       assert 0.0 == TestOrder.first_order(set)
