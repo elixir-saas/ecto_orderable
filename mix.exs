@@ -2,7 +2,7 @@ defmodule EctoOrderable.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/elixir-saas/ecto_orderable"
-  @version "0.2.0"
+  @version "0.3.0"
 
   def project do
     [
