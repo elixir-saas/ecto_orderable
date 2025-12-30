@@ -158,13 +158,13 @@ TemplateOrder.move(template, direction: :up)
 
 ### Scope Arguments
 
-Most functions accept flexible scope arguments:
+**Set-level operations** (`members`, `count`, `first_order`, `last_order`, `next_order`, `needs_rebalance?`, `rebalance`) accept flexible scope arguments:
 
 ```elixir
-# Parent struct - extracts ID as scope field value
+# Parent struct - extracts ID as first scope field value
 TodoOrder.next_order(user)
 
-# Keyword list - explicit scope values
+# Keyword list - explicit scope values (validated)
 TodoOrder.next_order(user_id: 123)
 
 # Item struct - extracts scope fields from item
@@ -172,6 +172,14 @@ TodoOrder.members(todo)
 
 # No argument - for global sets with scope: []
 TemplateOrder.next_order()
+```
+
+**Item-level operations** (`move`, `sibling_before`, `sibling_after`) require the actual item struct being operated on:
+
+```elixir
+TodoOrder.move(todo, direction: :up)
+TodoOrder.sibling_before(todo)
+TodoOrder.sibling_after(todo)
 ```
 
 ### Move Options

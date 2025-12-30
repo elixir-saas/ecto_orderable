@@ -91,8 +91,26 @@ defmodule EctoOrderable.Scope do
           end
         end)
 
-      # Keyword list - use directly (user provides all values)
+      # Keyword list - validate keys and extract values
       is_list(item_or_scope) and Keyword.keyword?(item_or_scope) ->
+        case Keyword.validate(item_or_scope, scope_fields) do
+          {:ok, _} ->
+            :ok
+
+          {:error, unknown_keys} ->
+            raise ArgumentError,
+                  "unknown scope fields: #{inspect(unknown_keys)}. " <>
+                    "Valid scope fields are: #{inspect(scope_fields)}"
+        end
+
+        missing_keys = scope_fields -- Keyword.keys(item_or_scope)
+
+        if missing_keys != [] do
+          raise ArgumentError,
+                "missing required scope fields: #{inspect(missing_keys)}. " <>
+                  "Expected all of: #{inspect(scope_fields)}"
+        end
+
         Enum.map(scope_fields, fn field ->
           {field, Keyword.fetch!(item_or_scope, field)}
         end)

@@ -71,7 +71,7 @@ defmodule Integration.MultiScopeTest do
     end
 
     test "raises when missing scope field", %{project1: project1} do
-      assert_raise KeyError, fn ->
+      assert_raise ArgumentError, ~r/missing required scope fields: \[:user_id\]/, fn ->
         TestMultiScopeOrder.first_order(project_id: project1.id)
       end
     end
@@ -81,9 +81,9 @@ defmodule Integration.MultiScopeTest do
       # because we don't know which scope field the id maps to
       {:ok, user} = Repo.insert(%Schemas.User{name: "Test"})
 
-      # Raises KeyError because the first scope field (:project_id) gets the user.id,
+      # Raises because the first scope field (:project_id) gets the user.id,
       # but the second scope field (:user_id) can't be resolved
-      assert_raise KeyError, fn ->
+      assert_raise ArgumentError, ~r/missing required scope fields: \[:user_id\]/, fn ->
         TestMultiScopeOrder.first_order(user)
       end
     end

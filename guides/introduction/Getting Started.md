@@ -66,6 +66,47 @@ For new tables, you may prefer to make the field non-null with a default:
 add :position, :float, null: false, default: 0.0
 ```
 
+## Understanding Set-Level vs Item-Level Operations
+
+The library provides two categories of functions:
+
+**Set-level operations** work on all items in a set and accept flexible scope arguments:
+
+| Function | Description |
+|----------|-------------|
+| `members(scope)` | Query for all items in the set |
+| `count(scope)` | Count items in the set |
+| `first_order(scope)` | Order value of first item |
+| `last_order(scope)` | Order value of last item |
+| `next_order(scope)` | Order value for appending a new item |
+| `needs_rebalance?(scope, opts)` | Check if values are too close |
+| `rebalance(scope, opts)` | Reset all values to even increments |
+
+These accept any of:
+- **Parent struct**: `TodoOrder.next_order(user)` — extracts `user.id` as the first scope field
+- **Item struct**: `TodoOrder.members(todo)` — extracts scope fields from the item
+- **Keyword list**: `TodoOrder.next_order(user_id: 123)` — explicit scope values (validated)
+- **No argument**: `TemplateOrder.next_order()` — for global sets with `scope: []`
+
+**Item-level operations** work on a specific item and require the item struct:
+
+| Function | Description |
+|----------|-------------|
+| `move(item, opts)` | Move an item (`direction:` or `between:`) |
+| `sibling_before(item)` | Get item immediately before |
+| `sibling_after(item)` | Get item immediately after |
+
+```elixir
+# Set-level: any scope input works
+TodoOrder.next_order(user)              # parent struct
+TodoOrder.next_order(todo)              # item struct
+TodoOrder.next_order(user_id: user.id)  # keyword list
+
+# Item-level: must be the actual item
+TodoOrder.move(todo, direction: :up)
+TodoOrder.sibling_before(todo)
+```
+
 ## Initializing Order for Existing Records
 
 When adding ordering to an existing feature, your records won't have `position` values yet. Use `rebalance/2` to initialize them based on another field:

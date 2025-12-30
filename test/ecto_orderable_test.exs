@@ -242,4 +242,24 @@ defmodule EctoOrderableTest do
       assert count == 11
     end
   end
+
+  describe "keyword list validation" do
+    test "raises on unknown scope field" do
+      assert_raise ArgumentError, ~r/unknown scope fields: \[:set_ids\]/, fn ->
+        TestOrder.first_order(set_ids: 123)
+      end
+    end
+
+    test "raises on extra scope fields" do
+      assert_raise ArgumentError, ~r/unknown scope fields: \[:extra\]/, fn ->
+        TestOrder.first_order(set_id: 123, extra: "field")
+      end
+    end
+
+    test "raises on missing scope fields" do
+      assert_raise ArgumentError, ~r/missing required scope fields: \[:set_id\]/, fn ->
+        TestOrder.first_order([])
+      end
+    end
+  end
 end
