@@ -199,7 +199,7 @@ defmodule Integration.ScopeJoinTest do
       assert result.position < first.position
     end
 
-    test "move with between using ids", %{user1: user1, todo_status: status} do
+    test "move with between using task_id inherits scope", %{user1: user1, todo_status: status} do
       # Get positions in todo status
       positions =
         TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id)
@@ -208,9 +208,27 @@ defmodule Integration.ScopeJoinTest do
 
       [first, second] = Enum.sort_by(positions, & &1.position)
 
-      # Move second between nil and first (to beginning)
-      result = TestScopeJoinOrder.move(second, between: {nil, first.id})
+      # Move second to beginning using task_id
+      # This tests that scope_join values are inherited correctly from config.scope_values
+      result = TestScopeJoinOrder.move(second, between: {nil, first.task_id})
       assert result.position < first.position
+    end
+
+    test "move with between using task_ids for both positions", %{
+      user1: user1,
+      todo_status: status
+    } do
+      # Get positions in todo status
+      positions =
+        TestScopeJoinOrder.members(user_id: user1.id, status_id: status.id)
+        |> Repo.all()
+        |> Repo.preload(:task)
+
+      [first, second] = Enum.sort_by(positions, & &1.position)
+
+      # Move second to end using task_id
+      result = TestScopeJoinOrder.move(first, between: {second.task_id, nil})
+      assert result.position > second.position
     end
   end
 

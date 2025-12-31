@@ -220,10 +220,8 @@ defmodule EctoOrderable.Operations do
       # Single identity field - use the passed value directly
       [identity_field] when length(config.primary_key) > 1 ->
         # Build full primary key by combining identity value with scope from item
-        scope_values =
-          config.scope
-          |> Enum.map(fn field -> {field, Map.fetch!(config.item, field)} end)
-          |> Map.new()
+        # Use config.scope_values which properly handles scope_join resolution
+        scope_values = Map.new(config.scope_values)
 
         Map.put(scope_values, identity_field, item_id)
 

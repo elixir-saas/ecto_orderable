@@ -13,12 +13,10 @@ defmodule EctoOrderable.TestRepo.Migrations.CreateUserTaskPositions do
       add :project_id, references(:projects)
     end
 
-    create table(:user_task_positions) do
+    create table(:user_task_positions, primary_key: false) do
       add :position, :float
-      add :user_id, references(:users)
-      add :task_id, references(:tasks)
+      add :user_id, references(:users), primary_key: true
+      add :task_id, references(:tasks), primary_key: true
     end
-
-    create index(:user_task_positions, [:user_id, :task_id])
   end
 end

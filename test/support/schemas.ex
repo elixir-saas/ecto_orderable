@@ -95,12 +95,16 @@ defmodule Schemas.UserTaskPosition do
   @moduledoc """
   A user's ordering of tasks. The status_id for scoping comes from
   the associated Task, not stored directly on this table.
+
+  Uses composite primary key (user_id, task_id) to match real-world
+  many-to-many join tables with ordering.
   """
   use Ecto.Schema
 
+  @primary_key false
   schema "user_task_positions" do
     field(:position, :float)
-    belongs_to(:user, Schemas.User)
-    belongs_to(:task, Schemas.Task)
+    belongs_to(:user, Schemas.User, primary_key: true)
+    belongs_to(:task, Schemas.Task, primary_key: true)
   end
 end
